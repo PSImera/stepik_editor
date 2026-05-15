@@ -1,0 +1,36 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Arial, sans-serif",
+    "fontSize": "12px",
+    "textColor": "#111827",
+    "primaryColor": "#f3f4f6",
+    "primaryTextColor": "#111827",
+    "primaryBorderColor": "#d1d5db",
+    "secondaryColor": "#ccfbf1",
+    "secondaryTextColor": "#111827",
+    "secondaryBorderColor": "#14b8a6",
+    "tertiaryColor": "#ffe4e6",
+    "tertiaryTextColor": "#111827",
+    "tertiaryBorderColor": "#f43f5e",
+    "lineColor": "#444441",
+    "nodeBorder": "#d1d5db",
+    "clusterBkg": "#ede9fe",
+    "clusterBorder": "#8b5cf6",
+    "edgeLabelBackground": "#ffffff",
+    "mainBkg": "transparent"
+  },
+  "themeCSS": ".label, .nodeLabel, .edgeLabel { font-family: Arial, sans-serif; font-weight: 400; } .node rect, .node polygon, .node path, .cluster rect { rx: 6px; ry: 6px; } .cluster rect { fill: #ffffff; stroke: #d1d5db; } .edgePath .path, .flowchart-link { stroke-width: 1.2px; } .node rect { stroke-width: 1px; } .label text, .nodeLabel, .edgeLabel { fill: #111827; }",
+  "flowchart": {
+    "htmlLabels": false,
+    "curve": "linear",
+    "nodeSpacing": 30,
+    "rankSpacing": 42,
+    "diagramPadding": 8,
+    "padding": 8,
+    "useMaxWidth": true
+  },
+  "sequence": {
+    "useMaxWidth": true
+  }
+}

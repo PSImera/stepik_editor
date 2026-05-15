@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.cache/
+.venv/
+.vscode/
+/course_rag/
+courses/*
+!courses/.gitkeep
+docs/
+node_modules/
+.env
+package-lock.json
+.claude/settings.local.json
