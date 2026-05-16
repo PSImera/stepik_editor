@@ -6,6 +6,7 @@ Short routing rules for working with learning materials in the `stepik_editor` p
 - Communication with the user must be in Russian.
 - For local Python commands in this repository, use the project interpreter `.\.venv\Scripts\python.exe` instead of system `python`.
 - Always read and write HTML files in `UTF-8`.
+- Do not blindly agree with the user. If a suggestion is factually wrong, duplicates existing content, or would make the material worse — say so directly and explain why.
 
 ## Python Code Quality (Pylance)
 
