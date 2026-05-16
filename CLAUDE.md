@@ -40,7 +40,7 @@ Short routing rules for working with learning materials in the `stepik_editor` p
 
 - Load skills only on demand for the current task.
 - If the task edits `CLAUDE.md` or any skill file in `.claude/skills/`, treat it as an edit-rules task before applying any more specific skill.
-- If `docs/<course>.md` exists for the target course, read it and apply those rules together with the selected skill.
+- If `courses/<course>/CLAUDE.md` exists for the target course, read it and apply those rules together with the selected skill.
 
 ## Course structure
 
