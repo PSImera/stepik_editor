@@ -20,6 +20,8 @@ class UploadWorkflowMixin:
         root_folder: Path
         SUPPORTED_STEP_TYPES: set[str]
 
+        def upload_structure(self, *, dry_run: bool = False) -> None: ...  # noqa: ARG002
+
     def upload_course(
         self,
         module_num: int | None = None,
@@ -28,8 +30,15 @@ class UploadWorkflowMixin:
         *,
         dry_run: bool = False,
         steps_per_lesson: int = MAX_LESSON_STEPS,
+        sync_structure: bool = False,
     ) -> None:
-        """Загружает локальные материалы обратно в существующий курс Stepik."""
+        """Загружает локальные материалы обратно в существующий курс Stepik.
+
+        sync_structure=True — сначала синхронизирует описание курса, модули и уроки
+        из structure.json в Stepik (создаёт/переименовывает), затем загружает шаги.
+        """
+        if sync_structure:
+            self.upload_structure(dry_run=dry_run)
         if module_num is not None:
             sections_to_process = [(module_num, self.structure[module_num - 1])]
         else:
@@ -64,17 +73,40 @@ class UploadWorkflowMixin:
                 )
 
                 print(f"  Lesson {current_lesson_num}: {lesson_title}")
-                if not lesson_folder.exists():
-                    print(f"    Lesson folder not found: {lesson_folder}")
-                    stats["missing"] += 1
-                    continue
 
+                lesson_folder.mkdir(parents=True, exist_ok=True)
                 manifest = load_manifest(lesson_folder)
+                manifest.setdefault("lesson_id", lesson_id)
                 steps_in_manifest = manifest.get("steps", [])
+
                 if not steps_in_manifest:
-                    print("    No steps in lesson.json")
-                    stats["missing"] += 1
-                    continue
+                    if step_num is not None:
+                        print("    No steps in lesson.json")
+                        stats["missing"] += 1
+                        continue
+                    # Полная синхронизация: оба пустые → заглушка; удалённый непустой → ошибка
+                    all_lesson_steps = self.client.get_step_sources(lesson_id)
+                    if all_lesson_steps:
+                        print(
+                            f"    ERROR: remote has {len(all_lesson_steps)} step(s) "
+                            "but local is empty — skipping to avoid overwriting with nothing"
+                        )
+                        stats["failed"] += 1
+                        continue
+                    # Оба пустые — создаём заглушку
+                    if dry_run:
+                        print("    will create stub (both local and remote are empty)")
+                        stats["planned"] += 1
+                        continue
+                    step_dir = lesson_folder / "01_text"
+                    step_dir.mkdir(exist_ok=True)
+                    (step_dir / "task.html").write_text(
+                        "<p>Урок в разработке.</p>", encoding="utf-8"
+                    )
+                    upsert_step(manifest, {"position": 1, "type": "text", "cost": 0})
+                    save_manifest(lesson_folder, manifest)
+                    steps_in_manifest = manifest["steps"]
+                    print("    stub created")
 
                 if step_num is not None:
                     steps_in_manifest = [

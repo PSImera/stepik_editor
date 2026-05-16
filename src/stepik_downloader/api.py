@@ -234,6 +234,79 @@ class StepikAPIClient:
             patch["cost"] = cost
         self.update_step_source(step_source_id=step_source_id, step_source_patch=patch)
 
+    def update_course(self, course_id: int, fields: dict[str, Any]) -> dict[str, Any]:
+        """Обновляет поля описания курса."""
+        response = self._send_json_update(
+            "PUT", f"https://stepik.org/api/courses/{course_id}", {"course": fields}
+        )
+        self._raise_for_status(response)
+        courses = response.json().get("courses", [])
+        return courses[0] if courses else {}
+
+    def create_section(self, course_id: int, title: str, position: int) -> dict[str, Any]:
+        """Создаёт новый модуль (секцию) в курсе."""
+        response = self._send_json_update(
+            "POST",
+            "https://stepik.org/api/sections",
+            {"section": {"course": course_id, "title": title, "position": position}},
+        )
+        self._raise_for_status(response)
+        sections = response.json().get("sections", [])
+        return sections[0] if sections else {}
+
+    def update_section(self, section_id: int, fields: dict[str, Any]) -> dict[str, Any]:
+        """Обновляет поля секции (модуля)."""
+        response = self._send_json_update(
+            "PUT", f"https://stepik.org/api/sections/{section_id}", {"section": fields}
+        )
+        self._raise_for_status(response)
+        sections = response.json().get("sections", [])
+        return sections[0] if sections else {}
+
+    def create_lesson(self, title: str) -> dict[str, Any]:
+        """Создаёт новый урок; возвращает объект с id."""
+        response = self._send_json_update(
+            "POST", "https://stepik.org/api/lessons", {"lesson": {"title": title}}
+        )
+        self._raise_for_status(response)
+        lessons = response.json().get("lessons", [])
+        return lessons[0] if lessons else {}
+
+    def update_lesson(self, lesson_id: int, title: str) -> None:
+        """Переименовывает урок."""
+        response = self._send_json_update(
+            "PUT", f"https://stepik.org/api/lessons/{lesson_id}", {"lesson": {"title": title}}
+        )
+        self._raise_for_status(response)
+
+    def create_unit(self, section_id: int, lesson_id: int, position: int) -> dict[str, Any]:
+        """Создаёт unit — связь урока с секцией на заданной позиции."""
+        response = self._send_json_update(
+            "POST",
+            "https://stepik.org/api/units",
+            {"unit": {"section": section_id, "lesson": lesson_id, "position": position}},
+        )
+        self._raise_for_status(response)
+        units = response.json().get("units", [])
+        return units[0] if units else {}
+
+    def update_unit(self, unit_id: int, fields: dict[str, Any]) -> dict[str, Any]:
+        """Обновляет поля unit (например, position)."""
+        response = self._send_json_update(
+            "PUT", f"https://stepik.org/api/units/{unit_id}", {"unit": fields}
+        )
+        self._raise_for_status(response)
+        units = response.json().get("units", [])
+        return units[0] if units else {}
+
+    def list_units_for_section(self, section_id: int) -> list[dict[str, Any]]:
+        """Возвращает все units секции."""
+        return self._collect_paginated(
+            url="https://stepik.org/api/units",
+            key="units",
+            params={"section": section_id},
+        )
+
     def get_step_sources(self, lesson_id: int) -> list[dict[str, Any]]:
         """Возвращает исходники шагов урока, включая source для choice/matching."""
         return self._collect_paginated(

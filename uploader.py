@@ -19,4 +19,5 @@ if __name__ == "__main__":
             # module_num=1,
             # lesson_num=1,
             # step_num=1,
+            # sync_structure=True,
         )

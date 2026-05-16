@@ -23,22 +23,26 @@ class DownloadWorkflowMixin:
         client: StepikAPIClient
 
         def get_lesson_steps(self, lesson_id: int) -> list[dict[str, Any]]: ...
-        def download_images(
-            self,
-            html: str,
-            lesson_folder: Path | str,
-            images_folder: str = ...,
-            step_num: int | None = ...,
-        ) -> str: ...
+        def download_images(self, html: str, step_folder: Path) -> str: ...
         def save_step_html(self, step_html: str, filepath: Path | str) -> None: ...
+        def refresh_structure(self) -> None: ...
 
     def download_course(
         self,
         module_num: int | None = None,
         lesson_num: int | None = None,
         step_num: int | None = None,
+        *,
+        refresh_structure: bool = False,
     ) -> None:
-        """Скачивает курс целиком или только выбранную часть."""
+        """Скачивает курс целиком или только выбранную часть.
+
+        refresh_structure=True — перескачать структуру (секции, уроки, section_id, unit_id)
+        с Stepik перед скачиванием шагов, сохранив course_info из локального файла.
+        """
+        if refresh_structure:
+            self.refresh_structure()
+
         if module_num is not None:
             sections_to_process = [(module_num, self.structure[module_num - 1])]
         else:
@@ -141,7 +145,7 @@ class DownloadWorkflowMixin:
         manifest["lesson_id"] = lesson_id
 
         if full_sync:
-            existing_positions = {s.get("position") for s in lesson_steps}
+            existing_positions = {s["position"] for s in lesson_steps if s.get("position") is not None}
             self._cleanup_stale_steps(lesson_folder, manifest, existing_positions)
             manifest["steps"] = []
 

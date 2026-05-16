@@ -100,11 +100,15 @@ class CourseStructureMixin:
                 unit_info = self.get_unit_info(unit_id)
                 lesson_id = unit_info.get("lesson")
                 if lesson_id:
+                    lesson_info = self.client.get_lesson(lesson_id)
                     lessons.append(
                         {
                             "lesson_id": lesson_id,
-                            "lesson_title": self.get_lesson_title(lesson_id),
+                            "unit_id": unit_id,
+                            "lesson_title": lesson_info.get("title", f"Урок {lesson_id}"),
                             "position": unit_info.get("position", 0),
+                            "lesson_info": lesson_info,
+                            "unit_info": unit_info,
                         }
                     )
 
@@ -112,8 +116,10 @@ class CourseStructureMixin:
             if lessons:
                 structure.append(
                     {
+                        "section_id": section_id,
                         "section_title": section_title,
                         "section_position": section_position,
+                        "section_info": section_info,
                         "lessons": lessons,
                     }
                 )

@@ -14,10 +14,11 @@ Target: module `$ARGUMENTS` (first token = module index, second token = lesson i
 If only one token is given, treat it as the module index and ask the user for the lesson index.
 If no arguments are given, ask the user for module and lesson indices.
 
-1. Locate the lesson folder. Read `lesson.json` to get the step list (positions, types).
+1. Locate the lesson folder. Read `lesson.json` to get the step list (positions, types) and `lesson_id`.
 2. For each step in the manifest: read `{pos:02d}_{type}/task.html` for text/code/free-answer steps; question steps (`choice`, `matching`, etc.) store their text in `{pos:02d}_{type}/step.json` under the `"text"` key.
-3. Check the current step count and structure.
-4. Ask the user: what needs to be done with this lesson? (Create from scratch, edit specific steps, restructure, or something else.)
+3. Read `courses/<course>/structure.json` and find the entry whose `lesson_id` matches — this gives you the authoritative lesson title (`lesson_title`) and its position in the module. Keep this entry in mind for the rest of the session.
+4. Check the current step count and structure.
+5. Ask the user: what needs to be done with this lesson? (Create from scratch, edit specific steps, restructure, or something else.)
 
 # Lesson Editing Rules
 
@@ -149,6 +150,28 @@ If the user approves, run the index rebuild first, then invoke `/summary`.
 - Validate code examples for plausibility and internal consistency.
 - Fix clearly broken examples.
 
+## Title Length Limits
+
+Stepik enforces a hard limit of **64 characters** on lesson titles. Before setting or editing a `lesson_title`:
+- Count the length.
+- If it exceeds 64 chars, shorten it while preserving meaning — abbreviate technology stacks, drop filler words, use "Практика:" prefix only if the rest fits.
+- Never truncate mechanically mid-word; find a natural short form.
+- The limit applies to both new lessons and renames.
+
+## Structure Sync
+
+The lesson title and its position in the course live in `courses/<course>/structure.json`, not in `lesson.json`. Whenever the lesson title or its position in the module changes, update `structure.json` in addition to any other files.
+
+**When to update `structure.json`:**
+
+- **Rename a lesson** — find the entry by `lesson_id` (read from `lesson.json`) in the `structure.json` `lessons` array and update its `lesson_title` field.
+- **Move a lesson to a different position** — update the `position` field of the affected entries and re-sort the `lessons` array by `position`. Renumber any other lessons that shift as a result.
+- **Add a new local lesson** (before it exists on Stepik) — append an entry with `lesson_id: 0`, the new title, and the next available `position` to the appropriate section's `lessons` array.
+
+`lesson.json` itself does not store the lesson title — only `lesson_id` and the step list. Do not add a title field to `lesson.json`.
+
+After editing `structure.json`, note to the user that running `upload_structure()` will push the rename or reorder to Stepik.
+
 ## Final Check
 
 1. Ensure only required lesson steps were changed.
@@ -159,4 +182,5 @@ If the user approves, run the index rebuild first, then invoke `/summary`.
 6. If lesson was substantially updated/finalized, create or update the summary file inside that lesson folder.
 7. Ensure theory steps that explain architecture, flows, or comparisons have an SVG diagram or an `<img>` placeholder (`src=""`) — not bare text or ASCII art.
 8. After all steps are done, offer to rebuild the RAG index for this lesson and save the summary (see **Lesson Completion Actions**).
+9. If the lesson title changed, confirm that `structure.json` was updated accordingly.
 
