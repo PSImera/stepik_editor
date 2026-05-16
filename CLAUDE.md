@@ -7,6 +7,17 @@ Short routing rules for working with learning materials in the `stepik_editor` p
 - For local Python commands in this repository, use the project interpreter `.\.venv\Scripts\python.exe` instead of system `python`.
 - Always read and write HTML files in `UTF-8`.
 
+## Python Code Quality (Pylance)
+
+When writing or editing Python code in `src/`, follow these rules to avoid Pylance errors at generation time — do not wait for the user to report them:
+
+- **Always annotate** function parameters and return types. Use `from __future__ import annotations` at the top of every file for forward-reference support.
+- **`TYPE_CHECKING` stubs** in mixins must exactly match the real method signature — same parameter names, same types, same defaults. If the real method lives in another mixin or class, read it before writing the stub.
+- **`dict.get()` returns `T | None`**. Never pass its result directly to a function expecting `T`. Either guard with `if value is not None`, use a default (`dict.get(key, fallback)`), or assert.
+- **Set comprehensions with `.get()`** produce `set[T | None]`. If the target parameter expects `set[T]`, filter: `{x for x in ... if x is not None}` or use direct key access with a guard.
+- **Mixin methods that call methods from sibling mixins** (e.g. `UploadWorkflowMixin` calling `upload_structure` from `StructureUploadMixin`) must declare those methods as stubs inside their own `if TYPE_CHECKING` block.
+- Before adding a stub to a `TYPE_CHECKING` block, read the actual implementation to confirm the exact signature.
+
 ## Shell and File System (Windows)
 - The environment is **Windows**. Use the dedicated tools `Read`, `Glob`, `Grep` for all file reads — never `ls`, `cat`, `find`, or `grep` via Bash.
 - **Always use the PowerShell tool for any shell command** — this is not optional. Bash cannot resolve Windows backslash paths and will fail silently or with "command not found".
