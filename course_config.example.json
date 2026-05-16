@@ -1,8 +1,12 @@
 {
-  "default_course": "",
+  "default_course": "course_name",
   "courses": {
     "course_name": 0
   },
-  "download": [],
-  "upload": []
+  "download": [
+    "course_name"
+  ],
+  "upload": [
+    "course_name"
+  ]
 }
