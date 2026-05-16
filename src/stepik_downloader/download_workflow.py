@@ -23,8 +23,7 @@ class DownloadWorkflowMixin:
         client: StepikAPIClient
 
         def get_lesson_steps(self, lesson_id: int) -> list[dict[str, Any]]: ...
-        def download_images(self, html: str, step_folder: Path) -> str: ...
-        def save_step_html(self, step_html: str, filepath: Path | str) -> None: ...
+        def download_step_images(self, html: str, step_folder: Path) -> None: ...
         def refresh_structure(self) -> None: ...
 
     def download_course(
@@ -159,14 +158,11 @@ class DownloadWorkflowMixin:
                 continue
 
             try:
-                image_downloader = (
-                    self.download_images if self.config.download_images else None
-                )
                 step_entry = save_step(
                     step_source=step,
                     lesson_folder=lesson_folder,
                     api_client=self.client,
-                    image_downloader=image_downloader,
+                    image_downloader=self.download_step_images,
                 )
                 upsert_step(manifest, step_entry)
                 print(f"    OK step {position} [{step_type}]")

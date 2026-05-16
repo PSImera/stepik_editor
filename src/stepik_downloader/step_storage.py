@@ -43,7 +43,7 @@ def save_step(
     step_source: dict[str, Any],
     lesson_folder: Path,
     api_client: "StepikAPIClient | None" = None,
-    image_downloader: "Callable[[str, Path], str] | None" = None,
+    image_downloader: "Callable[[str, Path], None] | None" = None,
 ) -> dict[str, Any]:
     """Сохраняет шаг локально; возвращает запись для lesson.json."""
     block = step_source.get("block", {})
@@ -107,7 +107,7 @@ def _save_free_answer(
     block: dict[str, Any],
     folder: Path,
     api_client: "StepikAPIClient | None",
-    image_downloader: "Callable[[str, Path], str] | None" = None,
+    image_downloader: "Callable[[str, Path], None] | None" = None,
 ) -> dict[str, Any]:
     _write_html(folder / "task.html", block.get("text", ""), folder, image_downloader)
     source = block.get("source", {})
@@ -142,7 +142,7 @@ def _save_instruction(folder: Path, instruction: dict[str, Any]) -> None:
 def _save_code(
     block: dict[str, Any],
     folder: Path,
-    image_downloader: "Callable[[str, Path], str] | None" = None,
+    image_downloader: "Callable[[str, Path], None] | None" = None,
 ) -> None:
     _write_html(folder / "task.html", block.get("text", ""), folder, image_downloader)
     options = block.get("options", {})
@@ -173,7 +173,7 @@ def _save_code(
 def _save_dataset(
     block: dict[str, Any],
     folder: Path,
-    image_downloader: "Callable[[str, Path], str] | None" = None,
+    image_downloader: "Callable[[str, Path], None] | None" = None,
 ) -> None:
     _write_html(folder / "task.html", block.get("text", ""), folder, image_downloader)
     options = block.get("options", {})
@@ -192,7 +192,7 @@ def _save_dataset(
 def _save_sql(
     block: dict[str, Any],
     folder: Path,
-    image_downloader: "Callable[[str, Path], str] | None" = None,
+    image_downloader: "Callable[[str, Path], None] | None" = None,
 ) -> None:
     _write_html(folder / "task.html", block.get("text", ""), folder, image_downloader)
     options = block.get("options", {})
@@ -212,7 +212,7 @@ def _save_sql(
 def _save_html_task(
     block: dict[str, Any],
     folder: Path,
-    image_downloader: "Callable[[str, Path], str] | None" = None,
+    image_downloader: "Callable[[str, Path], None] | None" = None,
 ) -> None:
     _write_html(folder / "task.html", block.get("text", ""), folder, image_downloader)
     options = block.get("options", {})
@@ -231,11 +231,11 @@ def _save_question(
     block: dict[str, Any],
     folder: Path,
     step_type: str,
-    image_downloader: "Callable[[str, Path], str] | None" = None,
+    image_downloader: "Callable[[str, Path], None] | None" = None,
 ) -> None:
     text = block.get("text", "")
     if image_downloader is not None:
-        text = image_downloader(text, folder)
+        image_downloader(text, folder)
     source = block.get("source", {})
     data: dict[str, Any] = {"text": text}
 
@@ -560,11 +560,11 @@ def _write_html(
     path: Path,
     content: str,
     folder: "Path | None" = None,
-    image_downloader: "Callable[[str, Path], str] | None" = None,
+    image_downloader: "Callable[[str, Path], None] | None" = None,
 ) -> None:
-    if image_downloader is not None and folder is not None:
-        content = image_downloader(content, folder)
     path.write_text(content.strip(), encoding="utf-8")
+    if image_downloader is not None and folder is not None:
+        image_downloader(content, folder)
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:

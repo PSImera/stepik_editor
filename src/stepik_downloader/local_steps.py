@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 import re
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
 
 from .html_utils import extract_step_name
 
@@ -105,55 +104,37 @@ class LocalStepsMixin:
             f"({preview}{suffix}); они будут отправлены как есть"
         )
 
-    def download_images(self, html: str, step_folder: Path) -> str:
-        """Скачивает изображения из HTML шага в step_folder, нумеруя 01, 02, ...
+    def download_step_images(self, html: str, step_folder: Path) -> None:
+        """Скачивает изображения из HTML в step_folder, не изменяя HTML.
 
-        Ссылки в HTML заменяются на имя файла (без пути — файл лежит рядом с task.html).
+        Имя файла берётся из атрибута name="..." тега <img>.
+        Файл пропускается, если name отсутствует или файл уже существует.
         """
-        counter = 0
-        img_pattern = re.compile(
-            r'(<img[^>]+src=["\'])([^"\']+)(["\'][^>]*>)',
-            re.IGNORECASE,
-        )
+        img_pattern = re.compile(r'<img([^>]*)>', re.IGNORECASE)
 
-        def replace_img(match: re.Match[str]) -> str:
-            nonlocal counter
-            prefix, img_url, suffix = match.group(1), match.group(2), match.group(3)
-            if img_url.startswith("data:"):
-                return match.group(0)
+        def _attr(tag_attrs: str, attr: str) -> str:
+            m = re.search(rf'{attr}=["\']([^"\']*)["\']', tag_attrs, re.IGNORECASE)
+            return m.group(1) if m else ""
+
+        for match in img_pattern.finditer(html):
+            tag_attrs = match.group(1)
+            img_url = _attr(tag_attrs, "src")
+            name_attr = _attr(tag_attrs, "name")
+            if not img_url or img_url.startswith("data:") or not name_attr:
+                continue
+            dest = step_folder / name_attr
+            if dest.exists():
+                continue
             try:
                 content = self.client.download_binary(img_url, timeout=10, verify=False)
-                ext = Path(urlparse(img_url).path).suffix or ".jpg"
-                counter += 1
-                filename = f"{counter:02d}{ext}"
-                (step_folder / filename).write_bytes(content)
-                return f"{prefix}{filename}{suffix}"
+                dest.write_bytes(content)
             except Exception as exc:
                 print(f"WARNING: cannot download image {img_url}: {exc}")
-                return f"<!-- image unavailable: {img_url} -->"
-
-        return img_pattern.sub(replace_img, html)
 
     def extract_step_name(self, html: str, max_length: int = 100) -> str:
         """Совместимый прокси к выделенной утилите извлечения заголовка шага."""
         return extract_step_name(html, max_length=max_length)
 
     def save_step_html(self, step_html: str, filepath: Path | str) -> None:
-        """Сохраняет HTML шага в отдельный файл с учётом настроек конфига."""
-        if self.config.html_head:
-            full_html = f"""<html>
-<head>
-    <meta charset='{self.config.encoding}'>
-    <style>
-        body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }}
-        img {{ max-width: 100%; height: auto; }}
-    </style>
-</head>
-<body>
-{step_html}
-</body>
-</html>"""
-        else:
-            full_html = step_html
-
-        Path(filepath).write_text(full_html, encoding=self.config.encoding)
+        """Сохраняет HTML шага в файл."""
+        Path(filepath).write_text(step_html, encoding=self.config.encoding)

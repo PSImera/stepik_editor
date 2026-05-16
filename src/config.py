@@ -11,8 +11,6 @@ class EditorConfig:
     course_name: str = ""
     course_save_folder: str = "courses"
     encoding: str = "utf-8"
-    download_images: bool = True
-    html_head: bool = False
 
     # Course RAG
     course_rag_root: str = "course_rag"
