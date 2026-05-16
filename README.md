@@ -57,10 +57,10 @@ STEPIK_SESSION=your_session_cookie
 Скопируйте пример и заполните:
 
 ```powershell
-copy defaults.example.json docs\defaults.json
+copy course_config.example.json course_config.json
 ```
 
-Отредактируйте `docs/defaults.json`:
+Отредактируйте `course_config.json`:
 
 ```json
 {
@@ -84,7 +84,7 @@ copy defaults.example.json docs\defaults.json
 
 ### Скачать курс
 
-Редактирует `"download"` в `docs/defaults.json`, затем:
+Редактирует `"download"` в `course_config.json`, затем:
 
 ```powershell
 .venv\Scripts\python.exe downloader.py
@@ -94,7 +94,7 @@ copy defaults.example.json docs\defaults.json
 
 ### Загрузить курс на Stepik
 
-Редактирует `"upload"` в `docs/defaults.json`, затем:
+Редактирует `"upload"` в `course_config.json`, затем:
 
 ```powershell
 .venv\Scripts\python.exe uploader.py
@@ -108,7 +108,7 @@ copy defaults.example.json docs\defaults.json
 .venv\Scripts\python.exe update_rag.py
 ```
 
-Курс берётся из `default_course` в `docs/defaults.json`.
+Курс берётся из `default_course` в `course_config.json`.
 
 ### CLI: скачивание / загрузка
 
@@ -169,7 +169,6 @@ stepik_editor/
 │                   ├── task.html       # Контент (text, code, free-answer)
 │                   └── step.json       # Тестовые задачи (choice, matching, ...)
 ├── docs/
-│   ├── defaults.json     # Конфигурация курсов (не в git)
 │   └── <course>.md       # Правила для конкретного курса
 ├── src/
 │   ├── config.py         # EditorConfig
@@ -178,7 +177,8 @@ stepik_editor/
 │   └── utils/             # Вспомогательные скрипты
 ├── .claude/
 │   └── skills/            # Скилы для Claude Code
-├── defaults.example.json  # Шаблон конфига
+├── course_config.json         # Конфигурация курсов (не в git)
+├── course_config.example.json # Шаблон конфига
 ├── downloader.py
 ├── uploader.py
 └── update_rag.py

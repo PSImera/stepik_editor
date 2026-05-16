@@ -4,7 +4,7 @@ from pathlib import Path
 from src.course_rag.indexer import CourseRAGIndex
 
 if __name__ == "__main__":
-    defaults = json.loads(Path("docs/defaults.json").read_text(encoding="utf-8"))
+    defaults = json.loads(Path("course_config.json").read_text(encoding="utf-8"))
     course = defaults["default_course"]
 
     rag = CourseRAGIndex(course=course)

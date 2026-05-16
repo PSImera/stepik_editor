@@ -14,7 +14,7 @@ Short routing rules for working with learning materials in the `stepik_editor` p
 - The Bash tool is completely off-limits for any command that references local project paths or the `.venv` interpreter.
 
 ## Base Context
-- Read `docs/defaults.json` to get `default_course`; use it as the active course unless the user specifies otherwise.
+- Read `course_config.json` to get `default_course`; use it as the active course unless the user specifies otherwise.
 - All courses are stored in `courses/`.
 - The base structure is: `courses/<course>/<module>/<lesson>/`.
 - Module and lesson folders use zero-padded indices like `03/05`.
