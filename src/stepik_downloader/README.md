@@ -13,7 +13,7 @@
 ## Карта модулей
 
 - `course_downloader.py` - фасад `CourseDownloader`, общая инициализация и
-  кеш структуры курса.
+  хранилище структуры курса (`structure.json`).
 - `api.py` - низкоуровневый HTTP-клиент Stepik API: авторизация, чтение
   сущностей, пагинация, создание/обновление/удаление `step-source`.
 - `course_structure.py` - загрузка метаданных курса, секций, уроков и шагов.
@@ -97,8 +97,8 @@ HTML, обычно достаточно:
 - Основной импорт: `from src.stepik_downloader import CourseDownloader`.
 - Основные операции: `download_course()` и `upload_course()`.
 - Вспомогательные методы, которые могут использовать скрипты вокруг пакета:
-  `sanitize_filename()`, `extract_step_name()`, `get_theory()`, `clear_cache()`
-  и `clear_cash()`.
+  `sanitize_filename()`, `extract_step_name()`, `get_theory()`, `delete_store()`
+  (устаревшие алиасы: `clear_cache()`, `clear_cash()`).
 - Для работы с манифестом урока вне пакета используйте функции из
   `lesson_manifest`: `load_manifest()`, `save_manifest()`, `upsert_step()`,
   `get_step_entry()`, `step_folder()`.

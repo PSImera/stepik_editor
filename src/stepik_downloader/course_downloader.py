@@ -56,7 +56,7 @@ class CourseDownloader(
         self.headers = self.client.headers
         self._get_course_info()
 
-    def _get_cache_path(self) -> Path:
+    def _get_store_path(self) -> Path:
         course_name = getattr(self, "course_name", None) or self.config.course_name
         return Path(self.config.course_save_folder) / course_name / "structure.json"
 
@@ -69,37 +69,39 @@ class CourseDownloader(
 
         return self.config.course_id
 
-    def _load_cached_course_data(self) -> bool:
-        cache_path = self._get_cache_path()
-        if not cache_path.exists():
+    def _load_course_data(self) -> bool:
+        store_path = self._get_store_path()
+        if not store_path.exists():
             return False
 
         try:
-            cached_data = json.loads(cache_path.read_text(encoding="utf-8"))
+            data = json.loads(store_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            print(f"⚠️ Не удалось прочитать кеш структуры курса: {exc}")
+            print(f"⚠️ Не удалось прочитать structure.json: {exc}")
             return False
 
-        if cached_data.get("course_id") != self.course_id:
+        if data.get("course_id") != self.course_id:
             return False
 
-        self.course_info = cached_data.get("course_info", {})
-        cached_course_name = cached_data.get("course_name")
-        self.course_name = cached_course_name or self.config.course_name
-        self.structure = cached_data.get("structure", [])
+        self.course_info = data.get("course_info", {})
+        self.course_name = data.get("course_name") or self.config.course_name
+        self.structure = data.get("structure", [])
         return bool(self.structure)
 
-    def _save_cached_course_data(self) -> None:
-        cache_path = self._get_cache_path()
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
-        cache_payload = {
-            "course_id": self.course_id,
-            "course_name": self.course_name,
-            "course_info": self.course_info,
-            "structure": self.structure,
-        }
-        cache_path.write_text(
-            json.dumps(cache_payload, ensure_ascii=False, indent=2),
+    def _save_course_data(self) -> None:
+        store_path = self._get_store_path()
+        store_path.parent.mkdir(parents=True, exist_ok=True)
+        store_path.write_text(
+            json.dumps(
+                {
+                    "course_id": self.course_id,
+                    "course_name": self.course_name,
+                    "course_info": self.course_info,
+                    "structure": self.structure,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
             encoding="utf-8",
         )
 
@@ -107,14 +109,14 @@ class CourseDownloader(
         """Обновляет section_id/unit_id/section_info/lesson_info из Stepik,
         сохраняя course_info и черновые уроки (lesson_id=0) из локального файла.
         """
-        cache_path = self._get_cache_path()
+        store_path = self._get_store_path()
         local_course_info: dict = {}
         local_structure: list = []
-        if cache_path.exists():
+        if store_path.exists():
             try:
-                cached = json.loads(cache_path.read_text(encoding="utf-8"))
-                local_course_info = cached.get("course_info", {})
-                local_structure = cached.get("structure", [])
+                stored = json.loads(store_path.read_text(encoding="utf-8"))
+                local_course_info = stored.get("course_info", {})
+                local_structure = stored.get("structure", [])
             except (OSError, json.JSONDecodeError):
                 pass
 
@@ -126,7 +128,7 @@ class CourseDownloader(
         if local_course_info:
             self.course_info = local_course_info
 
-        self._save_cached_course_data()
+        self._save_course_data()
         total = sum(len(s["lessons"]) for s in self.structure)
         print(f"Готово. Модулей: {len(self.structure)}, уроков: {total}")
 
@@ -216,14 +218,18 @@ class CourseDownloader(
         merged.sort(key=lambda l: l["position"])
         return merged
 
-    def clear_cash(self, course_id: int | None = None) -> None:
-        """Сохраняем старое имя метода для обратной совместимости."""
-        cache_path = self._get_cache_path()
-        if cache_path.exists():
-            cache_path.unlink()
-            print(f"Кеш структуры курса удалён: {cache_path}")
+    def delete_store(self, course_id: int | None = None) -> None:
+        store_path = self._get_store_path()
+        if store_path.exists():
+            store_path.unlink()
+            print(f"structure.json удалён: {store_path}")
         else:
-            print(f"Кеш структуры курса не найден: {cache_path}")
+            print(f"structure.json не найден: {store_path}")
+
+    def clear_cash(self, course_id: int | None = None) -> None:
+        """Устаревший метод — используй delete_store()."""
+        self.delete_store(course_id=course_id)
 
     def clear_cache(self, course_id: int | None = None) -> None:
-        self.clear_cash(course_id=course_id)
+        """Устаревший метод — используй delete_store()."""
+        self.delete_store(course_id=course_id)

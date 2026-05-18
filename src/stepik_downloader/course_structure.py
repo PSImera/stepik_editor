@@ -24,8 +24,8 @@ class CourseStructureMixin:
         course_name: str
         total_lessons: int
 
-        def _load_cached_course_data(self) -> bool: ...
-        def _save_cached_course_data(self) -> None: ...
+        def _load_course_data(self) -> bool: ...
+        def _save_course_data(self) -> None: ...
     def _get_course_info(self) -> dict[str, Any] | None:
         """Загружает метаданные курса и подготавливает локальную корневую папку."""
         self.course_id = self.config.course_id
@@ -36,8 +36,8 @@ class CourseStructureMixin:
         if not all(
             hasattr(self, attr) for attr in ("course_info", "structure", "course_name")
         ):
-            if self._load_cached_course_data():
-                print(f"Структура курса {self.course_id} загружена из кеша")
+            if self._load_course_data():
+                print(f"Структура курса {self.course_id} загружена из structure.json")
             else:
                 print(f"Загрузка структуры курса {self.course_id}...")
                 self.course_info = self.client.get_course(self.course_id)
@@ -50,7 +50,7 @@ class CourseStructureMixin:
 
                 self.structure = self.get_course_structure()
                 if self.structure:
-                    self._save_cached_course_data()
+                    self._save_course_data()
 
             if not self.structure:
                 print("❌ Не удалось получить структуру курса.")

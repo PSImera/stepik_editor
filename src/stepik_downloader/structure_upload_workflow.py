@@ -22,6 +22,9 @@ _COURSE_DESCRIPTION_FIELDS = (
     "certificate",
     "intro",
     "course_format",
+    "learning_format",
+    "acquired_skills",
+    "acquired_assets",
 )
 
 
@@ -32,7 +35,7 @@ class StructureUploadMixin:
         course_info: dict[str, Any]
         structure: list[dict[str, Any]]
 
-        def _save_cached_course_data(self) -> None: ...
+        def _save_course_data(self) -> None: ...
 
     def upload_structure(self, *, dry_run: bool = False) -> None:
         """Синхронизирует описание курса, модули и уроки из локального structure.json в Stepik.
@@ -92,7 +95,7 @@ class StructureUploadMixin:
                     if not dry_run:
                         self.client.update_section(section_id, {"title": title, "position": position})
                         local_sec.setdefault("section_info", {})["title"] = title
-                        self._save_cached_course_data()
+                        self._save_course_data()
                 else:
                     print(f"  Module {position}: '{title}' — up to date")
             else:
@@ -105,7 +108,7 @@ class StructureUploadMixin:
                         continue
                     local_sec["section_id"] = section_id
                     local_sec["section_info"] = created
-                    self._save_cached_course_data()
+                    self._save_course_data()
 
             if section_id:
                 self._sync_lessons(local_sec, section_id, dry_run=dry_run)
@@ -142,7 +145,7 @@ class StructureUploadMixin:
                     lesson_entry["unit_id"] = unit_id
                     lesson_entry["lesson_info"] = created_lesson
                     lesson_entry["unit_info"] = created_unit
-                    self._save_cached_course_data()
+                    self._save_course_data()
                 continue
 
             # урок существует — проверяем название
@@ -152,7 +155,7 @@ class StructureUploadMixin:
                 if not dry_run:
                     self.client.update_lesson(lesson_id, title)
                     lesson_entry.setdefault("lesson_info", {})["title"] = title
-                    self._save_cached_course_data()
+                    self._save_course_data()
             else:
                 print(f"    Lesson {position}: '{title}' — up to date")
 
@@ -164,4 +167,4 @@ class StructureUploadMixin:
                     unit_id = created_unit.get("id", 0)
                     lesson_entry["unit_id"] = unit_id
                     lesson_entry["unit_info"] = created_unit
-                    self._save_cached_course_data()
+                    self._save_course_data()
