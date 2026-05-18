@@ -8,6 +8,26 @@ Short routing rules for working with learning materials in the `stepik_editor` p
 - Always read and write HTML files in `UTF-8`.
 - Do not blindly agree with the user. If a suggestion is factually wrong, duplicates existing content, or would make the material worse — say so directly and explain why.
 
+## structure.json — Форматирование
+
+**Никогда не сохраняй `structure.json` через PowerShell `ConvertTo-Json`** — он ломает отступы (дублирует их для вложенных объектов) и экранирует `<>` как `<>`.
+
+Форматирование выполняется автоматически хуком `PostToolUse` после каждого `Write`/`Edit` любого `.json`-файла: `.claude/hooks/format_json.ps1` запускает Python с `ensure_ascii=False`, `indent=4`, запись без BOM. Ручной запуск не нужен.
+
+## Public Materials — Обязательное правило
+
+**Все материалы, которые видит студент, являются публичными.** Это включает:
+- шаги уроков (`task.html`, `step.json`);
+- поля описания курса в `structure.json`: `description`, `summary`, `target_audience`, `requirements`, `learning_format`, `course_format`, `workload`;
+- любой текст, который будет показан обучающимся.
+
+**При создании или редактировании любого из перечисленных материалов:**
+1. Загрузи `/public-materials` скилл (если он ещё не загружен в этой сессии).
+2. Применяй его правила: естественный русский язык, без излишних anglicisms, без "слопа", без формализма.
+3. После генерации или существенной правки проверь текст на паттерны из `/humanizer-ru`.
+
+Исключение: технические файлы (`lesson.json`, `step.json` с quiz-данными, Python-код) — к ним правила публичных материалов не применяются.
+
 ## Python Code Quality (Pylance)
 
 When writing or editing Python code in `src/`, follow these rules to avoid Pylance errors at generation time — do not wait for the user to report them:

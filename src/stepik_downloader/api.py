@@ -39,7 +39,7 @@ class StepikAPIClient:
         if client_id is None or client_secret is None:
             raise ValueError("CLIENT_ID и CLIENT_SECRET должны быть указаны в .env")
 
-        http_client = httpx.Client(http2=True, follow_redirects=True, timeout=30.0)
+        http_client = httpx.Client(http2=False, follow_redirects=True, timeout=30.0)
 
         session_cookie = os.getenv("STEPIK_SESSION", "").strip()
         if session_cookie:

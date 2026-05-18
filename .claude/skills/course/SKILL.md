@@ -8,6 +8,8 @@ argument-hint: "[course_name]"
 
 This skill handles structural and metadata editing at the course level — above individual lessons. It edits `courses/<course>/structure.json` which is the local source of truth for everything the `upload_structure()` uploader pushes to Stepik.
 
+Course description fields (`description`, `summary`, `target_audience`, `requirements`, `learning_format`, `course_format`, `workload`) are **public-facing text** visible to learners. **Always load /public-materials alongside this skill** when editing any of these fields — the same quality rules (natural Russian, no slop, no unnecessary English terms) apply as for lesson steps.
+
 Use this skill when the task involves:
 - Editing course description fields (title, summary, description, target_audience, requirements, etc.)
 - Renaming modules or lessons
