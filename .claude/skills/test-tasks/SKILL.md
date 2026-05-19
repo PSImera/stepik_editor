@@ -247,7 +247,9 @@ Each test task is stored as `step.json` in its subfolder. The `"text"` key alway
 
 ## Test Content
 
-- If the user does not specify otherwise, aim for about 10 test tasks per lesson.
+- **Target: 10 test tasks per lesson.** Do not deviate from this without explicit user instruction.
+- Reducing the count is only allowed when 10 high-quality tasks cannot be produced — meaning tasks that are simultaneously: non-trivial (answer is not obvious without understanding the topic), non-duplicating (each task covers distinct knowledge), and grounded in the lesson theory. If this threshold cannot be met, explain the reason to the user and state how many quality tasks were produced and why.
+- Never reduce the count silently: if generating fewer than 10, always state the reason explicitly.
 - In a standard set of 10 tasks, include a mix of types: single correct answer (`choice`), multiple correct answers (`choice` with `is_multiple_choice: true`), and `matching`.
 - Do not make a lesson consist entirely of `choice` tasks — it gets boring and learners can brute-force with unlimited attempts. Mix in `matching` and other types.
 - The number of tasks of each type should depend on how well that type reflects the lesson theory, not on an obligation to use every type.
