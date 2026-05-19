@@ -35,26 +35,29 @@ Scope is determined by what the user provides:
 
 # MODE: script
 
-Run the ready-made script that generates summaries for **all lessons** in the course at once.
+Run the ready-made script with scope-appropriate flags:
 
-```
-.\.venv\Scripts\python.exe -m src.utils.generate_lesson_summaries --course <course>
-```
+| Scope | Command |
+|---|---|
+| Lesson | `.\.venv\Scripts\python.exe -m src.utils.generate_lesson_summaries --course <course> --module <M> --lesson <L>` |
+| Module | `.\.venv\Scripts\python.exe -m src.utils.generate_lesson_summaries --course <course> --module <M>` |
+| Course | `.\.venv\Scripts\python.exe -m src.utils.generate_lesson_summaries --course <course>` |
 
 The script:
-- Builds a TF-IDF index across all `task.html` files in the course.
+- Builds a TF-IDF index across all `task.html` files in the course (always full-course for accurate IDF).
 - Reads `lesson.json`, step HTML files and `step.json` for quiz steps.
 - Writes `<module>-<lesson>_summary.md` next to each `lesson.json`.
 - Overwrites existing summaries.
+- Accepts optional `--module` and `--lesson` flags to restrict which summaries are written.
 
 **When to use script mode:**
-- Generating summaries for many lessons at once (whole course or whole module).
+- Generating summaries for one lesson, a module, or the whole course.
 - Fast first-pass indexing before authoring new lessons.
 - The course already has real lesson content (not stubs).
 
 **After the script finishes:** report how many files were created/updated (parse the script's stdout).
 
-**Stub detection in script mode:** the script generates summaries even for stub lessons — the summary will be thin. If the user asks for module scope or lesson scope and the target lessons are stubs, warn the user and suggest generating a module plan (module mode, llm) instead.
+**Stub detection in script mode:** the script generates summaries even for stub lessons — the summary will be thin. If the target lessons are stubs, warn the user and suggest generating a module plan (module mode, llm) instead.
 
 ---
 

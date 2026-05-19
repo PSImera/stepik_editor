@@ -302,6 +302,8 @@ def find_lesson_dirs(course_root: Path) -> list[Path]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--course", required=True, help="Course directory name inside courses/")
+    parser.add_argument("--module", type=int, default=None, help="Module number (optional)")
+    parser.add_argument("--lesson", type=int, default=None, help="Lesson number (optional, requires --module)")
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent.parent.parent
@@ -316,6 +318,18 @@ def main() -> None:
     section_titles = load_section_titles(course_root)
 
     lesson_dirs = find_lesson_dirs(course_root)
+
+    if args.module is not None:
+        lesson_dirs = [
+            d for d in lesson_dirs
+            if (m := LEADING_INDEX_RE.match(d.parent.name)) and int(m.group(1)) == args.module
+        ]
+        if args.lesson is not None:
+            lesson_dirs = [
+                d for d in lesson_dirs
+                if (l := LEADING_INDEX_RE.match(d.name)) and int(l.group(1)) == args.lesson
+            ]
+
     total = len(lesson_dirs)
     created = 0
 
