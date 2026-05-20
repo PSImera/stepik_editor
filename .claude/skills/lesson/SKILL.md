@@ -75,21 +75,25 @@ Filter results to those where module/lesson is greater than the current one. If 
 
 ## Lesson Completion Actions
 
-When you detect that lesson editing is finished — the user confirms the lesson is done, or the last step in the lesson was just edited, or test questions (тестовые задачи) were just added — **proactively offer** the following two actions. Do not execute them automatically; wait for the user's confirmation.
+When the user explicitly confirms that the lesson theory is finalized (says it's ready, approved, done — not just after the first generation), **proactively offer** the following actions. Do not execute them automatically; wait for the user's confirmation for each.
 
-1. **Обновить индекс** — rebuild this lesson in the RAG index so future searches reflect the new content:
-   ```
-   .\.venv\Scripts\python.exe -m src.course_rag build --course <course> --module-num <M> --lesson-num <L>
-   ```
-2. **Сохранить саммари** — create or update the lesson summary via the `/summary` skill.
+**Do NOT create test tasks on your own** at any point during lesson editing. Test tasks are always generated separately via the `/test-tasks` skill and only after the user confirms the theory is final.
 
-Suggest both together in one message, for example:
-> Урок выглядит завершённым. Предлагаю:
-> 1. Обновить RAG-индекс урока — чтобы следующие поиски учитывали новый текст.
-> 2. Сохранить саммари урока.
-> Выполнить оба действия?
+Offer all three together in one message, for example:
+> Теория урока выглядит готовой. Предлагаю:
+> 1. Сгенерировать тестовые задачи — запущу `/test-tasks` скилл.
+> 2. Обновить RAG-индекс урока — чтобы следующие поиски учитывали новый текст.
+> 3. Сохранить саммари урока.
+> Что делаем?
 
-If the user approves, run the index rebuild first, then invoke `/summary`.
+Then:
+- If the user agrees to test tasks — invoke the `/test-tasks` skill. Do not generate test tasks manually.
+- If the user agrees to rebuild the index — run:
+  ```
+  .\.venv\Scripts\python.exe -m src.course_rag build --course <course> --module-num <M> --lesson-num <L>
+  ```
+- If the user agrees to summary — invoke the `/summary` skill.
+- If the user declines any of these — skip it without further prompting.
 
 ## Content Requirements
 
@@ -181,6 +185,6 @@ After editing `structure.json`, note to the user that running `upload_structure(
 5. Ensure edited HTML files do not end with an extra blank line.
 6. If lesson was substantially updated/finalized, create or update the summary file inside that lesson folder.
 7. Ensure theory steps that explain architecture, flows, or comparisons have an SVG diagram or an `<img>` placeholder (`src=""`) — not bare text or ASCII art.
-8. After all steps are done, offer to rebuild the RAG index for this lesson and save the summary (see **Lesson Completion Actions**).
+8. After all steps are done and the user confirms the theory is final, offer test tasks, RAG index rebuild, and summary (see **Lesson Completion Actions**). Do not offer these after intermediate edits.
 9. If the lesson title changed, confirm that `structure.json` was updated accordingly.
 
