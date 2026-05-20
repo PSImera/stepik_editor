@@ -53,7 +53,7 @@ def save_manifest(lesson_folder: Path, manifest: dict[str, Any]) -> None:
     manifest = dict(manifest)
     manifest["steps"] = sorted(manifest.get("steps", []), key=lambda s: s["position"])
     path = lesson_folder / MANIFEST_FILENAME
-    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=4), encoding="utf-8")
 
 
 def upsert_step(manifest: dict[str, Any], step_entry: dict[str, Any]) -> None:
