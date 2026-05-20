@@ -20,7 +20,7 @@ class UploadWorkflowMixin:
         root_folder: Path
         SUPPORTED_STEP_TYPES: set[str]
 
-        def upload_structure(self, *, dry_run: bool = False) -> None: ...  # noqa: ARG002
+        def upload_structure(self, *, dry_run: bool = False, sync_deletions: bool = False) -> None: ...  # noqa: ARG002
 
     def upload_course(
         self,
@@ -38,7 +38,7 @@ class UploadWorkflowMixin:
         из structure.json в Stepik (создаёт/переименовывает), затем загружает шаги.
         """
         if sync_structure:
-            self.upload_structure(dry_run=dry_run)
+            self.upload_structure(dry_run=dry_run, sync_deletions=True)
         if module_num is not None:
             sections_to_process = [(module_num, self.structure[module_num - 1])]
         else:

@@ -299,6 +299,24 @@ class StepikAPIClient:
         units = response.json().get("units", [])
         return units[0] if units else {}
 
+    def delete_unit(self, unit_id: int) -> None:
+        """Удаляет unit (отвязывает урок от секции)."""
+        response = self.client.delete(
+            f"https://stepik.org/api/units/{unit_id}",
+            headers=self._write_headers(),
+        )
+        if response.status_code not in (200, 204):
+            self._raise_for_status(response)
+
+    def delete_section(self, section_id: int) -> None:
+        """Удаляет секцию (модуль) из курса."""
+        response = self.client.delete(
+            f"https://stepik.org/api/sections/{section_id}",
+            headers=self._write_headers(),
+        )
+        if response.status_code not in (200, 204):
+            self._raise_for_status(response)
+
     def list_units_for_section(self, section_id: int) -> list[dict[str, Any]]:
         """Возвращает все units секции."""
         return self._collect_paginated(

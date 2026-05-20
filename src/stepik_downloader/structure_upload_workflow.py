@@ -8,6 +8,17 @@ if TYPE_CHECKING:
     from .api import StepikAPIClient
 
 
+def _confirm(prompt: str) -> bool:
+    """Запрашивает Y/n в консоли. Возвращает True для Y/y/Enter, False для n/N."""
+    while True:
+        answer = input(f"{prompt} [Y/n] ").strip().lower()
+        if answer in ("", "y", "yes"):
+            return True
+        if answer in ("n", "no"):
+            return False
+        print("  Please enter Y or n.")
+
+
 # Поля описания курса, которые синхронизируются с Stepik
 _LESSON_TITLE_MAX_LEN = 64
 _SECTION_TITLE_MAX_LEN = 100
@@ -37,17 +48,18 @@ class StructureUploadMixin:
 
         def _save_course_data(self) -> None: ...
 
-    def upload_structure(self, *, dry_run: bool = False) -> None:
+    def upload_structure(self, *, dry_run: bool = False, sync_deletions: bool = False) -> None:
         """Синхронизирует описание курса, модули и уроки из локального structure.json в Stepik.
 
         Создаёт модули и уроки, которых нет на сайте.
         Переименовывает существующие, если название изменилось.
-        Не удаляет ничего на Stepik.
+        sync_deletions=True — дополнительно предлагает удалить модули и уроки,
+        которые есть на Stepik, но отсутствуют в локальном structure.json.
         """
         mode = "dry-run" if dry_run else "upload"
         print(f"\n=== upload_structure ({mode}) ===")
         self._sync_course_metadata(dry_run=dry_run)
-        self._sync_sections(dry_run=dry_run)
+        self._sync_sections(dry_run=dry_run, sync_deletions=sync_deletions)
         print("=== upload_structure done ===\n")
 
     # ------------------------------------------------------------------
@@ -78,7 +90,7 @@ class StructureUploadMixin:
     # Секции (модули)
     # ------------------------------------------------------------------
 
-    def _sync_sections(self, *, dry_run: bool) -> None:
+    def _sync_sections(self, *, dry_run: bool, sync_deletions: bool = False) -> None:
         for local_sec in self.structure:
             section_id = local_sec.get("section_id") or 0
             title = local_sec["section_title"]
@@ -111,14 +123,37 @@ class StructureUploadMixin:
                     self._save_course_data()
 
             if section_id:
-                self._sync_lessons(local_sec, section_id, dry_run=dry_run)
+                self._sync_lessons(local_sec, section_id, dry_run=dry_run, sync_deletions=sync_deletions)
+
+        if sync_deletions:
+            self._delete_orphaned_sections(dry_run=dry_run)
+
+    def _delete_orphaned_sections(self, *, dry_run: bool) -> None:
+        remote_course = self.client.get_course(self.course_id)
+        remote_section_ids: list[int] = remote_course.get("sections", [])
+        local_section_ids: set[int] = {
+            s["section_id"] for s in self.structure if s.get("section_id")
+        }
+        orphaned = [sid for sid in remote_section_ids if sid not in local_section_ids]
+        if not orphaned:
+            return
+        for sid in orphaned:
+            section_info = self.client.get_section(sid)
+            title = section_info.get("title", f"id={sid}")
+            confirmed = _confirm(f"  Delete module '{title}' (id={sid}) from Stepik?")
+            if confirmed:
+                print(f"  Module '{title}': deleting")
+                if not dry_run:
+                    self.client.delete_section(sid)
+            else:
+                print(f"  Module '{title}': skipped")
 
     # ------------------------------------------------------------------
     # Уроки внутри секции
     # ------------------------------------------------------------------
 
     def _sync_lessons(
-        self, local_sec: dict[str, Any], section_id: int, *, dry_run: bool
+        self, local_sec: dict[str, Any], section_id: int, *, dry_run: bool, sync_deletions: bool = False
     ) -> None:
         for lesson_entry in local_sec.get("lessons", []):
             lesson_id = lesson_entry.get("lesson_id") or 0
@@ -168,3 +203,30 @@ class StructureUploadMixin:
                     lesson_entry["unit_id"] = unit_id
                     lesson_entry["unit_info"] = created_unit
                     self._save_course_data()
+
+        if sync_deletions:
+            self._delete_orphaned_lessons(local_sec, section_id, dry_run=dry_run)
+
+    def _delete_orphaned_lessons(
+        self, local_sec: dict[str, Any], section_id: int, *, dry_run: bool
+    ) -> None:
+        section_info = self.client.get_section(section_id)
+        remote_unit_ids: list[int] = section_info.get("units", [])
+        local_lesson_ids: set[int] = {
+            e["lesson_id"] for e in local_sec.get("lessons", []) if e.get("lesson_id")
+        }
+        for unit_id in remote_unit_ids:
+            unit = self.client.get_unit(unit_id)
+            lesson_id = unit.get("lesson", 0)
+            if lesson_id and lesson_id not in local_lesson_ids:
+                lesson_info = self.client.get_lesson(lesson_id)
+                title = lesson_info.get("title", f"id={lesson_id}")
+                confirmed = _confirm(
+                    f"    Delete lesson '{title}' (lesson_id={lesson_id}, unit_id={unit_id})?"
+                )
+                if confirmed:
+                    print(f"    Lesson '{title}': deleting unit")
+                    if not dry_run:
+                        self.client.delete_unit(unit_id)
+                else:
+                    print(f"    Lesson '{title}': skipped")
