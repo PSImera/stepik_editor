@@ -167,7 +167,22 @@ Before setting any title, count its length. If it exceeds the limit:
 - Do not change `lesson_id` of an existing lesson (non-zero) — this would break the link to Stepik content.
 - Do not change `section_id` of an existing module — same reason.
 - Maximum 16 steps per lesson (enforced elsewhere, but mention if relevant).
-- Validate JSON integrity before saving — structure.json must remain valid JSON.
+
+## JSON Validity — Mandatory Validation Step
+
+**After every Edit or Write to structure.json**, immediately run:
+
+```powershell
+.\.venv\Scripts\python.exe -c "import json; json.load(open('courses/<course>/structure.json', encoding='utf-8')); print('OK')"
+```
+
+If it prints anything other than `OK`, fix the JSON before proceeding. Common causes:
+
+- **Trailing comma** — the most frequent error. Happens when removing an array element or editing a block that was not the last one: `},` before `]` or `},` before `}` at end of object. After any deletion or insertion in an array, verify the last element has no trailing comma.
+- **Missing comma** — happens when inserting a new element and forgetting to add `,` after the preceding element.
+- **Mismatched braces/brackets** — count `{`/`}` and `[`/`]` in the edited region.
+
+Do not report the edit as complete until the validation command prints `OK`.
 
 ---
 
