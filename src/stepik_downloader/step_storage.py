@@ -255,6 +255,7 @@ def _save_question(
         })
     elif step_type == "matching":
         data.update({
+            "is_html_enabled": source.get("is_html_enabled", True),
             "preserve_firsts_order": source.get("preserve_firsts_order", True),
             "pairs": source.get("pairs", []),
         })
@@ -502,7 +503,11 @@ def _load_question(folder: Path, step_type: str) -> tuple[dict[str, Any], str]:
             "options": data.get("options", []),
         }
     elif step_type == "matching":
-        source = {"pairs": data.get("pairs", []), "preserve_firsts_order": data.get("preserve_firsts_order", True)}
+        source = {
+            "is_html_enabled": data.get("is_html_enabled", True),
+            "pairs": data.get("pairs", []),
+            "preserve_firsts_order": data.get("preserve_firsts_order", True),
+        }
     elif step_type == "fill-blanks":
         source = {
             "components": data.get("components", []),

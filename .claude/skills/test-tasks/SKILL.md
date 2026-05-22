@@ -109,6 +109,7 @@ Each test task is stored as `step.json` in its subfolder. The `"text"` key alway
 ```json
 {
   "text": "<p>Match the terms to their descriptions</p>",
+  "is_html_enabled": true,
   "preserve_firsts_order": true,
   "pairs": [
     {"first": "Term A", "second": "Definition A"},
