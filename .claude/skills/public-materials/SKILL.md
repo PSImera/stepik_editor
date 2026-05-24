@@ -74,7 +74,7 @@ description: Apply these rules whenever the task produces or edits public conten
 - Use `<blockquote>` for short points of emphasis or digression, such as a footnote, reference, or exception. Don't overuse it; use it sparingly.
 - Mark explained terms with `<strong>`.
 - Mark variables, functions, methods, classes, params, files, and technical entities with `<code>`.
-- Do not use a literal `$` character in HTML content outside of LaTeX formula blocks. Two `$` signs anywhere on the page activate MathJax and render everything between them as a formula, corrupting the text. Replace `$` with the HTML entity `&#36;` everywhere: in plain prose, inside `<code>` and `<pre><code>` blocks (e.g. `&#36;HOME`, `&#36;REPO_ROOT`), in question text, in answer options, and in task descriptions. Use words only when the dollar sign has no technical meaning.
+- Do not place two `$` signs in the same `<td>`, `<p>`, or other inline context. Stepik runs MathJax: two `$` on the same text node turn everything between them into a formula. The HTML entity `&#36;` does NOT work — the platform converts it back to `$` on upload. The only reliable fix is to avoid two dollar signs in the same element: write price ranges as `15 / 30 долл.` or `15–30 долл.` instead of `$15 / $30`; for shell variables in `<code>`, use word form or restructure the example so no two `$` appear in the same code span.
 - Format formulas in LaTeX-compatible style:
   - inline: `<span class="math-tex">\( ... \)</span>`
   - display: `<p><span class="math-tex">\[ ... \]</span></p>`
