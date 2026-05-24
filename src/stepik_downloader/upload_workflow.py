@@ -130,9 +130,15 @@ class UploadWorkflowMixin:
 
                 if step_num is None:
                     local_positions = {s["position"] for s in steps_in_manifest}
+                    local_step_ids = {
+                        s["step_source_id"]
+                        for s in steps_in_manifest
+                        if s.get("step_source_id")
+                    }
                     cleanup_results = self._delete_extra_lesson_steps(
                         lesson_id=lesson_id,
                         local_step_numbers=local_positions,
+                        local_step_ids=local_step_ids,
                         steps_per_lesson=steps_per_lesson,
                         dry_run=dry_run,
                     )
@@ -382,12 +388,13 @@ class UploadWorkflowMixin:
         local_step_numbers: set[int],
         steps_per_lesson: int,
         *,
+        local_step_ids: set[int] | None = None,
         dry_run: bool,
     ) -> list[str]:
         all_lesson_steps = self.client.get_step_sources(lesson_id)
         to_delete = [
             s for s in all_lesson_steps
-            if self._should_delete_extra_step(s, local_step_numbers, steps_per_lesson)
+            if self._should_delete_extra_step(s, local_step_numbers, steps_per_lesson, local_step_ids)
         ]
         results: list[str] = []
         for step in sorted(to_delete, key=lambda s: s.get("position", 0), reverse=True):
@@ -400,12 +407,17 @@ class UploadWorkflowMixin:
         step: dict[str, Any],
         local_step_numbers: set[int],
         steps_per_lesson: int,
+        local_step_ids: set[int] | None = None,
     ) -> bool:
         position = step.get("position", 0)
         step_type = step.get("block", {}).get("name")
+        if step_type not in SUPPORTED_STEP_TYPES:
+            return False
         if position > steps_per_lesson:
             return True
-        return step_type in SUPPORTED_STEP_TYPES and position not in local_step_numbers
+        if local_step_ids is not None:
+            return step["id"] not in local_step_ids
+        return position not in local_step_numbers
 
     def _delete_stepik_step(self, step: dict[str, Any], *, dry_run: bool) -> str:
         position = step.get("position", 0)
