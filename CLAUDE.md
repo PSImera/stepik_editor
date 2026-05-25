@@ -68,11 +68,31 @@ When writing or editing Python code in `src/`, follow these rules to avoid Pylan
 - Text and task steps store their content in `task.html` inside the step subfolder.
 - Тестовые задачи (choice, sorting, matching, fill-blanks, number, string, math, table) are stored as `step.json` only — no `task.html`.
 
+## Remote Operations — Запрет
+
+**Никогда не запускай `uploader.py` и любую команду, которая изменяет данные на серверах Stepik**, без явного подтверждения пользователя для каждого конкретного запуска.
+
+Это включает: `python uploader.py`, а также любой вызов `upload_structure()`, `upload_course()` через интерпретатор.
+
+Эти операции изменяют удалённые данные и частично необратимы. После внесения изменений в `structure.json` или шаги уроков — **сообщи пользователю, что файлы обновлены, и напомни, что для синхронизации с Stepik нужно запустить uploader вручную**. Не запускай его сам.
+
 ## Skills
 
 - Load skills only on demand for the current task.
 - If the task edits `CLAUDE.md` or any skill file in `.claude/skills/`, treat it as an edit-rules task before applying any more specific skill.
 - If `courses/<course>/CLAUDE.md` exists for the target course, read it and apply those rules together with the selected skill.
+
+### Skill routing
+
+| Задача | Скилл |
+|--------|-------|
+| Переименование урока или модуля | `/course` |
+| Изменение порядка уроков или модулей | `/course` |
+| Добавление нового урока или модуля в структуру | `/course` |
+| Редактирование описания курса (`description`, `summary`, `target_audience` и т.д.) | `/course` + `/public-materials` |
+| Редактирование шагов урока (HTML, тесты) | `/lesson` |
+| Создание тестовых заданий | `/test-tasks` |
+| Создание задачи на программирование | `/task-programming` |
 
 ## Course structure
 

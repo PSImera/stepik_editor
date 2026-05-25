@@ -53,6 +53,8 @@ structure[]          ← array of modules (sections), sorted by section_position
 
 **Do not touch** `section_info`, `lesson_info`, `unit_info` — these are caches of Stepik API responses, overwritten on next `refresh_structure()`. Edit only the fields listed as "editable".
 
+> The uploader uses `lesson_info.title` and `section_info.title` as "last known remote state" to decide whether to send a rename request. Editing these cache fields breaks change detection and causes the uploader to silently skip the API call.
+
 ---
 
 ## Editing Rules
@@ -79,11 +81,14 @@ When editing `description` or `requirements`, preserve valid HTML structure. Use
 
 ### Renaming a Module
 
-Update `section_title` of the target entry. Do not change `section_position` unless also reordering.
+Update **only** `section_title` of the target entry. Do not change `section_position` unless also reordering. Never touch `section_info` — same cache rule as for `lesson_info`.
 
 ### Renaming a Lesson
 
-Update `lesson_title` of the target entry inside its module's `lessons` array. Do not change `lesson_id` or `position` unless also reordering.
+Update **only** `lesson_title` of the target entry inside its module's `lessons` array. Do not change `lesson_id` or `position` unless also reordering.
+
+> **CRITICAL — do not touch `lesson_info.title`.**
+> The uploader detects renames by comparing `lesson_title` (desired) against `lesson_info.title` (last known remote value). If you update `lesson_info.title` to match the new `lesson_title`, the uploader sees no diff and silently skips the API call — the lesson name on Stepik stays unchanged. `lesson_info` is a read-only cache; the uploader overwrites it after a successful push.
 
 ### Reordering Modules
 
