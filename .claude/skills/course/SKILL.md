@@ -128,6 +128,22 @@ Append a new entry to the target module's `lessons` array with:
 ```
 `lesson_id: 0` signals to the uploader that the lesson must be created on Stepik.
 
+### Removing a Lesson
+
+1. Remove the lesson entry from the `lessons` array in `structure.json`.
+2. Renumber remaining lessons so `position` stays a contiguous 1-based sequence. Re-sort the array by `position`.
+3. **Delete the local lesson folder** `courses/<course>/<module>/<lesson_pos_padded>/` (e.g. `courses/voice_ai/02/04/`). Use PowerShell: `Remove-Item -Recurse -Force "<path>"`.
+4. **Rename subsequent lesson folders** so their two-digit folder names match the new positions. Example: if you deleted position 4, rename `05/` → `04/`, `06/` → `05/`, etc. Use `Rename-Item`.
+5. The Stepik lesson itself (`lesson_id`) is **not deleted** on the server — the uploader never deletes. The lesson becomes orphaned on Stepik and can be removed manually if needed.
+
+### Removing a Module
+
+1. Remove the module entry from the `structure` array in `structure.json`.
+2. Renumber remaining modules so `section_position` stays a contiguous 1-based sequence. Re-sort the array by `section_position`.
+3. **Delete the local module folder** `courses/<course>/<module_pos_padded>/` (e.g. `courses/voice_ai/03/`). Use `Remove-Item -Recurse -Force`.
+4. **Rename subsequent module folders** to match new positions.
+5. Same caveat: the Stepik section is not deleted on the server.
+
 ---
 
 ## What the Uploader Does With Your Changes
