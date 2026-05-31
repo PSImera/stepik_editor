@@ -370,13 +370,27 @@ class StepikAPIClient:
         self,
         step_source_id: int,
         position: int,
-        block: dict[str, Any],
+        block: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Обновляет позицию существующего step-source внутри урока."""
-        return self.update_step_source(
-            step_source_id=step_source_id,
-            step_source_patch={"position": position, "block": block},
-        )
+        """Обновляет позицию существующего step-source внутри урока.
+
+        Отправляет PATCH только с полем position (без block), чтобы избежать
+        ситуации, когда Stepik обновляет block, но тихо игнорирует позицию.
+        Для PUT-fallback (403/405) block включается если передан.
+        """
+        url = f"https://stepik.org/api/step-sources/{step_source_id}"
+        patch_payload = {"step-source": {"position": position}}
+        response = self._send_json_update("PATCH", url, patch_payload)
+        if response.status_code in (403, 405):
+            put_data: dict[str, Any] = {"position": position}
+            if block is not None:
+                put_data["block"] = block
+            response = self._send_json_update("PUT", url, {"step-source": put_data})
+        self._raise_for_status(response)
+        if not response.content:
+            return {}
+        step_sources = response.json().get("step-sources", [])
+        return step_sources[0] if step_sources else {}
 
     def delete_step_source(self, step_source_id: int) -> None:
         """Удаляет step-source из урока."""

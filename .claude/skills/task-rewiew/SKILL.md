@@ -72,7 +72,7 @@ When creating `instruction.json` for a peer-reviewed step, use these defaults un
 
 - `min_reviews: 3` — three peer reviews required by default.
 - The user may request different rubrics, more criteria, or a different `min_reviews` value — apply those instead.
-- For `instruction_type: "instructor"` steps, an `instruction.json` is not required.
+- For `instruction_type: "instructor"` steps, `instruction.json` is **required** — without it the uploader does not link any instruction to the step and Stepik shows it as a plain open-answer with no review. Use `strategy_type: "instructor"` and `min_reviews: 1`.
 
 ### Rubric count and scoring
 

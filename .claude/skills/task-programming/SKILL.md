@@ -13,25 +13,53 @@ description: Rules for creating automatically checked programming tasks for a sp
 ## Where To Store Programming Tasks
 
 - Store each programming task inside the folder of the lesson it belongs to.
-- For each new task, create a dedicated subfolder named `practice_prog_<index>`.
-- Keep all files related to that automatically checked programming task inside the corresponding `practice_prog_<index>` folder.
-- `practice_prog_<index>` is the authoring format. After upload to Stepik the downloader will also create a `{pos:02d}_code/` subfolder from the API response — do not confuse the two.
+- For each new task, create a dedicated subfolder named `{pos:02d}_code/`, where `{pos:02d}` is the zero-padded position number from `lesson.json` — the same convention used by all other step folders (`01_text`, `03_choice`, etc.).
+- Keep all files related to that automatically checked programming task inside the corresponding `{pos:02d}_code/` folder.
 - After creating the files, add the step entry to `lesson.json`: `{"position": <pos>, "step_source_id": null, "type": "code", "cost": 1}`. Use the next available position after existing steps.
 
 ## Required Files
 
-- For each programming task, create the files described in `guides:template:v1` from `prompts.yaml`.
-- Store them inside `practice_prog_<index>`.
-- Required files:
-- `taskN_condition.html`
-- `taskN_template.py`
-- `taskN_checker.py`
-- `taskN_solution.py`
+Store the following files inside `{pos:02d}_code/`. The names are fixed — the uploader looks for exactly these names:
+
+- `task.html` — condition shown to the student (public-facing, use /public-materials rules)
+- `template.py` — full template with `::python3`, `::header`, `::code`, `::footer` markers; used as the source for `step.json`
+- `checker.py` — checker module with `generate`, `solve`, `check` (runs on Python 3.6)
+- `solution.py` — reference solution (local authoring only, not uploaded)
+- `step.json` — step metadata including the template; **must be created manually** (see format below)
+
+## step.json Format
+
+`step.json` is the uploader metadata for a code step. Create it alongside `template.py`:
+
+```json
+{
+    "time_limit": 8,
+    "memory_limit": 256,
+    "limits": {},
+    "templates": {},
+    "header_lines": {},
+    "footer_lines": {},
+    "samples": [],
+    "samples_count": 0,
+    "templates_data": "<full content of template.py>",
+    "is_time_limit_scaled": true,
+    "is_memory_limit_scaled": true,
+    "manual_time_limits": [],
+    "manual_memory_limits": [],
+    "test_cases": [],
+    "is_run_user_code_allowed": true
+}
+```
+
+- `templates_data` must contain the **full content of `template.py`** verbatim (with `::python3`, `::header`, `::code`, `::footer` markers). Stepik parses the markers server-side and populates `templates`, `header_lines`, `footer_lines` automatically.
+- Leave `templates`, `header_lines`, `footer_lines` as empty objects `{}` on first upload — they will be filled after Stepik processes the template.
+- Adjust `time_limit` (seconds) to the task complexity: 5 s for simple loops, 8–15 s for tasks with I/O or mocking.
+- Create `step.json` using a short Python script rather than writing by hand, since `templates_data` is a multiline string.
 
 ## Condition File Requirements
 
 - Use rules for Condition part together with /public-materials skill.
-- `taskN_condition.html` is formatted the same way as lesson step HTML files: **no `<!DOCTYPE>`, `<html>`, `<head>`, or `<body>` tags** — content starts directly with `<h1>`.
+- `task.html` is formatted the same way as lesson step HTML files: **no `<!DOCTYPE>`, `<html>`, `<head>`, or `<body>` tags** — content starts directly with `<h1>`.
 - `taskN_condition.html` must include:
     - `<h1>` with the task title;
     - `<h2>Задание</h2>` with a clear statement of what to implement;
@@ -169,8 +197,9 @@ description: Rules for creating automatically checked programming tasks for a sp
 ## Final Check
 
 1. Ensure the exact lesson path was identified before creating files.
-2. Ensure the task folder is named `practice_prog_<index>`.
-4. Ensure all prompt-defined files exist in the corresponding `practice_prog_<index>` folder.
+2. Ensure the task folder is named `{pos:02d}_code/` matching the step position in `lesson.json`.
+3. Ensure all required files exist: `task.html`, `template.py`, `checker.py`, `solution.py`, `step.json`.
+4. Ensure `step.json` has `templates_data` populated with the full content of `template.py`.
 5. Ensure the task is intended for automatic checking, not for manual review.
 6. Ensure the condition does not include a `<h2>Пример</h2>` block or multiple examples — the platform inserts test #1 automatically.
 7. Ensure the template starts with `::python3` and uses `::header`, `::code`, `::footer` markers **without** a leading `#` — `# ::footer` is a Python comment and breaks execution.

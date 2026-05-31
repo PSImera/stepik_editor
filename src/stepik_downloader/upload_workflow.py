@@ -129,6 +129,13 @@ class UploadWorkflowMixin:
                     stats[result] += 1
 
                 if step_num is None:
+                    self._ensure_step_positions(
+                        lesson_id=lesson_id,
+                        manifest_steps=steps_in_manifest,
+                        dry_run=dry_run,
+                    )
+
+                if step_num is None:
                     local_positions = {s["position"] for s in steps_in_manifest}
                     local_step_ids = {
                         s["step_source_id"]
@@ -381,6 +388,71 @@ class UploadWorkflowMixin:
             position=target_position,
             block=block,
         )
+
+    def _ensure_step_positions(
+        self,
+        lesson_id: int,
+        manifest_steps: list[dict[str, Any]],
+        *,
+        dry_run: bool,
+    ) -> None:
+        """Проверяет позиции шагов на Stepik и исправляет несоответствия.
+
+        Алгоритм двухфазный, чтобы избежать конфликтов позиций:
+        1. Паркует неверно расположенные шаги на временные позиции (>> max).
+        2. Ставит каждый шаг на целевую позицию из lesson.json.
+        """
+        current_steps = self.client.get_step_sources(lesson_id)
+        by_id: dict[int, dict[str, Any]] = {s["id"]: s for s in current_steps}
+
+        target: dict[int, int] = {
+            entry["step_source_id"]: entry["position"]
+            for entry in manifest_steps
+            if entry.get("step_source_id") and entry["step_source_id"] in by_id
+        }
+
+        misplaced: dict[int, tuple[int, int]] = {
+            ssid: (by_id[ssid]["position"], target_pos)
+            for ssid, target_pos in target.items()
+            if by_id[ssid]["position"] != target_pos
+        }
+
+        if not misplaced:
+            print("    Positions: all correct")
+            return
+
+        for ssid, (cur, tgt) in misplaced.items():
+            print(f"    Position mismatch: step {ssid}: Stepik={cur}, expected={tgt}")
+
+        if dry_run:
+            for ssid, (_, tgt) in misplaced.items():
+                print(f"    will fix step {ssid} → {tgt}")
+            return
+
+        max_pos = max((s["position"] for s in current_steps), default=0)
+
+        # Phase 1: переносим неверные шаги на временные позиции (>> max)
+        temp_positions: dict[int, int] = {}
+        for i, ssid in enumerate(misplaced):
+            temp_pos = max_pos + 100 + i
+            block = by_id[ssid].get("block")
+            try:
+                self.client.update_step_source_position(ssid, temp_pos, block)
+                temp_positions[ssid] = temp_pos
+                print(f"      step {ssid}: parked at {temp_pos}")
+            except Exception as exc:
+                print(f"      step {ssid}: failed to park: {exc}")
+
+        # Phase 2: ставим каждый шаг на целевую позицию (от меньшей к большей)
+        for ssid, (_, target_pos) in sorted(misplaced.items(), key=lambda kv: kv[1][1]):
+            if ssid not in temp_positions:
+                continue
+            block = by_id[ssid].get("block")
+            try:
+                self.client.update_step_source_position(ssid, target_pos, block)
+                print(f"      step {ssid}: moved → {target_pos}")
+            except Exception as exc:
+                print(f"      step {ssid}: failed to move to {target_pos}: {exc}")
 
     def _delete_extra_lesson_steps(
         self,
