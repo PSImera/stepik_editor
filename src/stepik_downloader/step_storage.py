@@ -4,7 +4,7 @@
 Содержимое по типу:
   text        →  task.html
   free-answer →  task.html  [+ instruction.json]
-  code        →  task.html + step.json + checker.py
+  code        →  task.html + step.json + template.py + checker.py
   dataset     →  task.html + step.json + dataset.py
   sql         →  task.html + step.json + init.sql + solve.sql + checker.py
   html        →  task.html + step.json + template.html + template.css
@@ -150,6 +150,11 @@ def _save_code(
     checker_code = source.get("code", "")
     if checker_code:
         (folder / "checker.py").write_text(checker_code, encoding="utf-8")
+    # Шаблон (::header/::code/::footer) хранится в template.py как источник истины,
+    # а не строкой в step.json — так его удобно читать и редактировать.
+    templates_data = source.get("templates_data", "")
+    if templates_data:
+        (folder / "template.py").write_text(templates_data, encoding="utf-8")
     meta = {
         "time_limit": options.get("execution_time_limit", 5),
         "memory_limit": options.get("execution_memory_limit", 256),
@@ -160,7 +165,6 @@ def _save_code(
         "samples": options.get("samples", []),
         "samples_count": source.get("samples_count", 0),
         "is_run_user_code_allowed": options.get("is_run_user_code_allowed", True),
-        "templates_data": source.get("templates_data", ""),
         "is_time_limit_scaled": source.get("is_time_limit_scaled", True),
         "is_memory_limit_scaled": source.get("is_memory_limit_scaled", True),
         "manual_time_limits": source.get("manual_time_limits", []),
@@ -397,6 +401,10 @@ def _load_code(folder: Path) -> tuple[dict[str, Any], str]:
     html = _read_html(folder / "task.html")
     meta = _read_json(folder / "step.json")
     checker = (folder / "checker.py").read_text(encoding="utf-8") if (folder / "checker.py").exists() else ""
+    # template.py — источник истины для шаблона. Если файла нет (простая
+    # задача без шаблона), templates_data остаётся пустым.
+    template_file = folder / "template.py"
+    templates_data = template_file.read_text(encoding="utf-8") if template_file.exists() else ""
     options = {
         "execution_time_limit": meta.get("time_limit", 5),
         "execution_memory_limit": meta.get("memory_limit", 256),
@@ -412,7 +420,7 @@ def _load_code(folder: Path) -> tuple[dict[str, Any], str]:
         "execution_time_limit": meta.get("time_limit", 5),
         "execution_memory_limit": meta.get("memory_limit", 256),
         "samples_count": meta.get("samples_count", 0),
-        "templates_data": meta.get("templates_data", ""),
+        "templates_data": templates_data,
         "is_time_limit_scaled": meta.get("is_time_limit_scaled", True),
         "is_memory_limit_scaled": meta.get("is_memory_limit_scaled", True),
         "is_run_user_code_allowed": meta.get("is_run_user_code_allowed", True),

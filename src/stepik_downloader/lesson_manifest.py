@@ -18,7 +18,7 @@
 Содержимое подпапки по типу:
   text        →  task.html
   free-answer →  task.html  [+ instruction.json если есть рецензирование]
-  code        →  task.html + step.json + checker.py (если есть)
+  code        →  task.html + step.json + template.py + checker.py (если есть)
   dataset     →  task.html + step.json + dataset.py
   sql         →  task.html + step.json + init.sql + solve.sql + checker.py
   html        →  task.html + step.json + template.html + template.css

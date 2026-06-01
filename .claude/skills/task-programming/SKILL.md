@@ -22,14 +22,14 @@ description: Rules for creating automatically checked programming tasks for a sp
 Store the following files inside `{pos:02d}_code/`. The names are fixed — the uploader looks for exactly these names:
 
 - `task.html` — condition shown to the student (public-facing, use /public-materials rules)
-- `template.py` — full template with `::python3`, `::header`, `::code`, `::footer` markers; used as the source for `step.json`
+- `template.py` — full template with `::python3`, `::header`, `::code`, `::footer` markers. **This is the single source of truth for the template** — the uploader reads `templates_data` directly from this file. Do NOT duplicate its content into `step.json`.
 - `checker.py` — checker module with `generate`, `solve`, `check` (runs on Python 3.6)
 - `solution.py` — reference solution (local authoring only, not uploaded)
-- `step.json` — step metadata including the template; **must be created manually** (see format below)
+- `step.json` — step metadata (limits, flags); **must be created manually** (see format below)
 
 ## step.json Format
 
-`step.json` is the uploader metadata for a code step. Create it alongside `template.py`:
+`step.json` holds only the uploader metadata for a code step — **not** the template, which lives in `template.py`. Create it alongside `template.py`:
 
 ```json
 {
@@ -41,7 +41,6 @@ Store the following files inside `{pos:02d}_code/`. The names are fixed — the 
     "footer_lines": {},
     "samples": [],
     "samples_count": 0,
-    "templates_data": "<full content of template.py>",
     "is_time_limit_scaled": true,
     "is_memory_limit_scaled": true,
     "manual_time_limits": [],
@@ -51,10 +50,10 @@ Store the following files inside `{pos:02d}_code/`. The names are fixed — the 
 }
 ```
 
-- `templates_data` must contain the **full content of `template.py`** verbatim (with `::python3`, `::header`, `::code`, `::footer` markers). Stepik parses the markers server-side and populates `templates`, `header_lines`, `footer_lines` automatically.
-- Leave `templates`, `header_lines`, `footer_lines` as empty objects `{}` on first upload — they will be filled after Stepik processes the template.
+- Do **not** add a `templates_data` key — the uploader (`_load_code` in `src/stepik_downloader/step_storage.py`) reads the template from `template.py` directly. If a task has no template (a simple task without `::header`/`::footer`), just omit `template.py` and the uploaded template stays empty.
+- Leave `templates`, `header_lines`, `footer_lines` as empty objects `{}` on first upload — Stepik parses the `::header`/`::code`/`::footer` markers server-side and fills them.
 - Adjust `time_limit` (seconds) to the task complexity: 5 s for simple loops, 8–15 s for tasks with I/O or mocking.
-- Create `step.json` using a short Python script rather than writing by hand, since `templates_data` is a multiline string.
+- `step.json` has no multiline strings now, so it can be written directly without a helper script.
 
 ## Condition File Requirements
 
@@ -65,6 +64,7 @@ Store the following files inside `{pos:02d}_code/`. The names are fixed — the 
     - `<h2>Задание</h2>` with a clear statement of what to implement;
     - a description of special or edge cases when relevant;
     - `<h2>Примечание</h2>` when needed.
+- In the note, **mention pre-defined helpers only when they are not self-evident from the task body.** If the task description already names a function and explains what it does (e.g. "Функция `load_data()` возвращает список записей..."), repeating "it is already available" is redundant — omit it. Do mention in the note: (a) an environment variable name if the header reads one (e.g. `API_KEY`); (b) any pre-defined helper that the task body does not describe but the student might need. **Always use the exact name**: say "`_cache` и `_state` уже объявлены", never "глобальные переменные уже объявлены" without naming them. Do NOT tell the student to define something themselves (like `MAX_SIZE`) — if it is not in the template, they figure it out from the task body.
 - In the note, specify when relevant:
     - that input is already parsed and passed as function arguments;
     - which libraries are already imported;
@@ -199,7 +199,7 @@ Store the following files inside `{pos:02d}_code/`. The names are fixed — the 
 1. Ensure the exact lesson path was identified before creating files.
 2. Ensure the task folder is named `{pos:02d}_code/` matching the step position in `lesson.json`.
 3. Ensure all required files exist: `task.html`, `template.py`, `checker.py`, `solution.py`, `step.json`.
-4. Ensure `step.json` has `templates_data` populated with the full content of `template.py`.
+4. Ensure the template lives only in `template.py` and `step.json` has **no** `templates_data` key (the uploader reads the template from `template.py`).
 5. Ensure the task is intended for automatic checking, not for manual review.
 6. Ensure the condition does not include a `<h2>Пример</h2>` block or multiple examples — the platform inserts test #1 automatically.
 7. Ensure the template starts with `::python3` and uses `::header`, `::code`, `::footer` markers **without** a leading `#` — `# ::footer` is a Python comment and breaks execution.
