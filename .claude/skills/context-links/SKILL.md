@@ -15,8 +15,8 @@ description: Rules for using Course RAG as historical memory during lesson autho
 - This document is the rule source for two optional capabilities:
   - historical semantic search inside the current course;
   - rare learner-facing references to other courses.
-- If the task only needs Course RAG, you do not need to open [links-catalog.md](docs/links-catalog.md).
-- Open [links-catalog.md](docs/links-catalog.md) only when you actually need to add, edit, validate, or phrase a learner-facing cross-course reference.
+- If the task only needs Course RAG, you do not need to open [links-catalog.md](../../../docs/links-catalog.md).
+- Open [links-catalog.md](../../../docs/links-catalog.md) only when you actually need to add, edit, validate, or phrase a learner-facing cross-course reference.
 - Treat the catalog as data, not as the place where the behavioral policy lives.
 
 ## Historical Search Inside The Current Course
@@ -74,7 +74,7 @@ Avoid:
 ## Cross-Course References
 
 - Cross-course references are optional and should be rare.
-- The hard ceiling is tracked per source course and per target course in [links-catalog.md](docs/links-catalog.md).
+- The hard ceiling is tracked per source course and per target course in [links-catalog.md](../../../docs/links-catalog.md).
 - For any given source course, at most two outbound mentions are allowed to any one target course.
 - Only reference a different course when it genuinely helps the learner:
   - a deeper specialized track;
@@ -82,8 +82,8 @@ Avoid:
   - a topic intentionally out of scope for the current course.
 - Never advertise the same course from inside itself.
 - If a cross-course reference is used, prefer a brief native sentence, not a banner-like sales insert.
-- Before adding a new cross-course mention, check the source course ledger in [links-catalog.md](docs/links-catalog.md).
-- After adding a new cross-course mention, update the ledger in [links-catalog.md](docs/links-catalog.md) in the same task.
+- Before adding a new cross-course mention, check the source course ledger in [links-catalog.md](../../../docs/links-catalog.md).
+- After adding a new cross-course mention, update the ledger in [links-catalog.md](../../../docs/links-catalog.md) in the same task.
 
 Good patterns:
 
@@ -98,7 +98,7 @@ Avoid:
 
 ## Source Of Cross-Course Links
 
-- Use [links-catalog.md](docs/links-catalog.md) as the source of truth for external course references and promo links.
+- Use [links-catalog.md](../../../docs/links-catalog.md) as the source of truth for external course references and promo links.
 - Treat the ledger in that file as authoritative for whether a new mention is still allowed from the current course to the target course.
 - Do not open the catalog by default just because this file was opened; open it only when the current task actually needs a cross-course link or ledger check.
 - When a learner-facing text needs a cross-course mention, choose one relevant course from that catalog and use either:
