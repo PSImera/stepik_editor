@@ -124,6 +124,7 @@ class StructureUploadMixin:
 
             if section_id:
                 self._sync_lessons(local_sec, section_id, dry_run=dry_run, sync_deletions=sync_deletions)
+                self._ensure_unit_positions(local_sec, section_id, dry_run=dry_run)
 
         if sync_deletions:
             self._delete_orphaned_sections(dry_run=dry_run)
@@ -206,6 +207,88 @@ class StructureUploadMixin:
 
         if sync_deletions:
             self._delete_orphaned_lessons(local_sec, section_id, dry_run=dry_run)
+
+    def _ensure_unit_positions(
+        self, local_sec: dict[str, Any], section_id: int, *, dry_run: bool
+    ) -> None:
+        """Сверяет позиции units секции с порядком уроков в structure.json и чинит расхождения.
+
+        `_sync_lessons` переименовывает уроки и создаёт недостающие units, но никогда не
+        переставляет уже существующие. Без этой сверки порядок уроков на сайте расходится
+        с локальным structure.json — например, после вставки нового урока в середину модуля
+        соседние уроки на сайте остаются в старом порядке.
+
+        Алгоритм двухфазный, как в `_ensure_step_positions`, чтобы избежать конфликтов позиций:
+        1. Паркует неверно расположенные units на временные позиции (>> max).
+        2. Ставит каждый unit на целевую позицию из structure.json (от меньшей к большей).
+        """
+        managed = [e for e in local_sec.get("lessons", []) if e.get("unit_id")]
+        target: dict[int, int] = {e["unit_id"]: e["position"] for e in managed}
+        if not target:
+            return
+
+        # Берём units через get_section + get_unit поштучно: фильтр /api/units?section=
+        # отвечает крайне медленно и упирается в таймаут, а этот путь надёжен (его же
+        # использует загрузчик при скачивании структуры).
+        section_info = self.client.get_section(section_id)
+        current_units = [
+            u for uid in section_info.get("units", []) if (u := self.client.get_unit(uid))
+        ]
+        current_pos: dict[int, int] = {u["id"]: u["position"] for u in current_units}
+        lesson_by_unit: dict[int, int] = {u["id"]: u["lesson"] for u in current_units}
+
+        misplaced: dict[int, tuple[int, int]] = {
+            uid: (current_pos[uid], tgt)
+            for uid, tgt in target.items()
+            if uid in current_pos and current_pos[uid] != tgt
+        }
+
+        if not misplaced:
+            print("    Unit positions: all correct")
+            return
+
+        for uid, (cur, tgt) in misplaced.items():
+            print(f"    Unit position mismatch: unit {uid}: Stepik={cur}, expected={tgt}")
+
+        if dry_run:
+            for uid, (_, tgt) in misplaced.items():
+                print(f"    will fix unit {uid} → {tgt}")
+            return
+
+        max_pos = max((u["position"] for u in current_units), default=0)
+
+        # Phase 1: паркуем неверные units на временные позиции (>> max)
+        temp_positions: dict[int, int] = {}
+        for i, uid in enumerate(misplaced):
+            temp_pos = max_pos + 100 + i
+            try:
+                self.client.update_unit(
+                    uid,
+                    {"section": section_id, "lesson": lesson_by_unit[uid], "position": temp_pos},
+                )
+                temp_positions[uid] = temp_pos
+                print(f"      unit {uid}: parked at {temp_pos}")
+            except Exception as exc:
+                print(f"      unit {uid}: failed to park: {exc}")
+
+        # Phase 2: ставим каждый unit на целевую позицию (от меньшей к большей)
+        for uid, (_, target_pos) in sorted(misplaced.items(), key=lambda kv: kv[1][1]):
+            if uid not in temp_positions:
+                continue
+            try:
+                self.client.update_unit(
+                    uid,
+                    {"section": section_id, "lesson": lesson_by_unit[uid], "position": target_pos},
+                )
+                print(f"      unit {uid}: moved → {target_pos}")
+            except Exception as exc:
+                print(f"      unit {uid}: failed to move to {target_pos}: {exc}")
+
+        # Обновляем локальные unit_info.position, чтобы structure.json отражал новый порядок
+        for entry in managed:
+            if entry["unit_id"] in target:
+                entry.setdefault("unit_info", {})["position"] = entry["position"]
+        self._save_course_data()
 
     def _delete_orphaned_lessons(
         self, local_sec: dict[str, Any], section_id: int, *, dry_run: bool
