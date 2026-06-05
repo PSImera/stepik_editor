@@ -16,8 +16,8 @@ if __name__ == "__main__":
         uploader = CourseDownloader(config)
 
         uploader.upload_course(
-            module_num=1,
-            lesson_num=4,
-            # step_num=4,
+            module_num=3,
+            lesson_num=2,
+            # step_num=2,
             # sync_structure=True,
         )

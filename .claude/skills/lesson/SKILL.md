@@ -103,6 +103,7 @@ Then:
 - Remove semantic repetition, including repeats between steps.
 - Prefer progression-style lesson flow where later steps build on earlier ones, instead of several parallel explanations that could be read in any order.
 - Do not end a step with a summary of what was just covered or with a teaser about what will happen in the next lesson.
+- Do not explicitly announce what will be done later in this lesson or in upcoming steps, lessons, or modules. Avoid roadmap sentences such as "дальше в уроке разберём X, Y, Z", "в следующем уроке", "в третьем уроке обернётся в...", or any forward pointer that previews future work. The learner can see the course structure; let each step stand on its own. When a mechanism is out of scope here, simply state it is not covered in this step without scheduling when it will be — drop the "когда" entirely rather than pointing forward.
 - If the previous lesson already established a running example or a concrete investigative thread, continue it by default. If another project or case demonstrates the target skill more clearly, you may switch, but preserve continuity through the same method and make that transition explicit.
 - If the previous lesson summary or agreed handoff already names a concrete artifact for the next step, treat that artifact as the default starting point for the new lesson instead of replacing it with a generic exercise.
 
