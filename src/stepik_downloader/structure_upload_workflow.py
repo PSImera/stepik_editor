@@ -126,8 +126,84 @@ class StructureUploadMixin:
                 self._sync_lessons(local_sec, section_id, dry_run=dry_run, sync_deletions=sync_deletions)
                 self._ensure_unit_positions(local_sec, section_id, dry_run=dry_run)
 
+        self._ensure_section_positions(dry_run=dry_run)
+
         if sync_deletions:
             self._delete_orphaned_sections(dry_run=dry_run)
+
+    def _ensure_section_positions(self, *, dry_run: bool) -> None:
+        """Сверяет позиции секций (модулей) с порядком в structure.json и чинит расхождения.
+
+        `_sync_sections` отправляет позицию секции на Stepik только вместе с
+        переименованием. Если модуль переставили (изменилась позиция, а название —
+        нет), ветка «up to date» не трогает позицию, и порядок модулей на сайте
+        расходится с structure.json. Двухфазный алгоритм, как в `_ensure_unit_positions`:
+        1. Паркует неверно расположенные секции на временные позиции (>> max).
+        2. Ставит каждую секцию на целевую позицию (от меньшей к большей).
+        """
+        managed = [s for s in self.structure if s.get("section_id")]
+        target: dict[int, int] = {s["section_id"]: s["section_position"] for s in managed}
+        if not target:
+            return
+
+        # Берём секции через get_course + get_section поштучно: фильтр /api/sections?course=
+        # возвращает пустой список (как и /api/units?section=), поэтому полагаться на него
+        # нельзя — иначе сверка молча решает, что «всё верно». Этот путь надёжен.
+        remote_course = self.client.get_course(self.course_id)
+        current_sections = [
+            s for sid in remote_course.get("sections", []) if (s := self.client.get_section(sid))
+        ]
+        current_pos: dict[int, int] = {
+            s["id"]: s["position"] for s in current_sections if s["id"] in target
+        }
+
+        misplaced: dict[int, tuple[int, int]] = {
+            sid: (current_pos[sid], tgt)
+            for sid, tgt in target.items()
+            if sid in current_pos and current_pos[sid] != tgt
+        }
+
+        if not misplaced:
+            print("  Section positions: all correct")
+            return
+
+        for sid, (cur, tgt) in misplaced.items():
+            print(f"  Section position mismatch: section {sid}: Stepik={cur}, expected={tgt}")
+
+        if dry_run:
+            for sid, (_, tgt) in misplaced.items():
+                print(f"  will fix section {sid} → {tgt}")
+            return
+
+        title_by_id: dict[int, str] = {s["section_id"]: s["section_title"] for s in managed}
+        max_pos = max((s["position"] for s in current_sections), default=0)
+
+        # Phase 1: паркуем неверные секции на временные позиции (>> max)
+        temp_positions: dict[int, int] = {}
+        for i, sid in enumerate(misplaced):
+            temp_pos = max_pos + 100 + i
+            try:
+                self.client.update_section(sid, {"title": title_by_id[sid], "position": temp_pos})
+                temp_positions[sid] = temp_pos
+                print(f"    section {sid}: parked at {temp_pos}")
+            except Exception as exc:
+                print(f"    section {sid}: failed to park: {exc}")
+
+        # Phase 2: ставим каждую секцию на целевую позицию (от меньшей к большей)
+        for sid, (_, target_pos) in sorted(misplaced.items(), key=lambda kv: kv[1][1]):
+            if sid not in temp_positions:
+                continue
+            try:
+                self.client.update_section(sid, {"title": title_by_id[sid], "position": target_pos})
+                print(f"    section {sid}: moved → {target_pos}")
+            except Exception as exc:
+                print(f"    section {sid}: failed to move to {target_pos}: {exc}")
+
+        # Обновляем локальные section_info.position, чтобы structure.json отражал новый порядок
+        for entry in managed:
+            if entry["section_id"] in target:
+                entry.setdefault("section_info", {})["position"] = entry["section_position"]
+        self._save_course_data()
 
     def _delete_orphaned_sections(self, *, dry_run: bool) -> None:
         remote_course = self.client.get_course(self.course_id)
