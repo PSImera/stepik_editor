@@ -128,6 +128,32 @@ Append a new entry to the target module's `lessons` array with:
 ```
 `lesson_id: 0` signals to the uploader that the lesson must be created on Stepik.
 
+### Moving a Lesson to Another Module
+
+Moving a lesson means detaching its Stepik **unit** (the link between a lesson and a section) from the old module and creating a new one in the new module. A `unit_id` is always section-specific — it cannot be reused in a different module.
+
+**Steps:**
+
+1. Remove the lesson entry from the old module's `lessons` array in `structure.json`.
+2. Renumber remaining lessons in the old module (gap-free 1-based sequence).
+3. Add the lesson entry to the new module's `lessons` array:
+   ```json
+   {
+     "lesson_id": <existing id>,
+     "lesson_title": "<title>",
+     "position": <target position>,
+     "lesson_info": <copy from old entry>
+   }
+   ```
+   **Do NOT copy `unit_id` or `unit_info` from the old entry.** Leave them absent or set `"unit_id": 0`. The old unit belongs to the old module's section and is invalid in the new one.
+4. Renumber lessons in the new module (gap-free 1-based sequence).
+5. Run the uploader with `sync_deletions=True`:
+   - The uploader will find the old unit orphaned in the source module and prompt for deletion (confirm **Y**).
+   - It will create a new unit for the lesson in the destination module's section.
+6. Then run `upload_course()` for both affected modules to sync steps.
+
+> **Common mistake:** copying the full old entry including `unit_id` into the new module. The `unit_id` then points to the wrong Stepik section — the lesson appears in both modules on the site, or the unit stays in the old module while the new one is never created. Always clear `unit_id`/`unit_info` when moving.
+
 ### Removing a Lesson
 
 1. Remove the lesson entry from the `lessons` array in `structure.json`.
@@ -161,7 +187,7 @@ Uploader behaviour:
 - **Module** without `section_id` → POST /api/sections (creates new)
 - **Lesson title** with existing `lesson_id` → PUT /api/lessons/{id}
 - **Lesson** with `lesson_id: 0` → POST /api/lessons + POST /api/units (creates both)
-- Uploader never deletes modules or lessons — only creates and updates
+- Uploader **with default `sync_deletions=False`** never deletes — only creates and updates. With `sync_deletions=True` it interactively prompts to delete orphaned units (lessons removed from a module locally). Use `sync_deletions=True` after moving or removing a lesson.
 
 **Position reordering** — the uploader passes `position` on every update, so Stepik will apply the new order.
 

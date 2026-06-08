@@ -15,9 +15,16 @@ if __name__ == "__main__":
         config = EditorConfig(course_id=course_id, course_name=course_name)
         uploader = CourseDownloader(config)
 
-        uploader.upload_course(
-            module_num=3,
-            lesson_num=2,
-            # step_num=2,
-            # sync_structure=True,
-        )
+        # Шаг 1: синхронизирует структуру — создаёт новые уроки (lesson_id=0),
+        # записывает реальные lesson_id в structure.json,
+        # удаляет осиротевшие юниты (уроки, убранные из модуля локально).
+        uploader.upload_structure(sync_deletions=True)
+
+        # Шаг 2: загружаем шаги нужных модулей
+        uploader.upload_course(module_num=4)
+        uploader.upload_course(module_num=5)
+
+        # Для точечной загрузки раскомментируй нужное:
+        # uploader.upload_course(module_num=4, lesson_num=3)
+        # uploader.upload_course(module_num=5, lesson_num=6)
+        # uploader.upload_course(module_num=5, lesson_num=6, step_num=1)
