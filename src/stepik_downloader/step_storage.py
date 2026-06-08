@@ -296,13 +296,7 @@ def _save_question(
             "numerical_test": source.get("numerical_test", {}),
         })
     elif step_type == "table":
-        data.update({
-            "columns": source.get("columns", []),
-            "rows": source.get("rows", []),
-            "options": source.get("options", {}),
-            "description": source.get("description", ""),
-            "is_always_correct": source.get("is_always_correct", False),
-        })
+        data.update(_table_source_from_stepik(source))
 
     data["feedback_correct"] = block.get("feedback_correct", "")
     data["feedback_wrong"] = block.get("feedback_wrong", "")
@@ -546,13 +540,7 @@ def _load_question(folder: Path, step_type: str) -> tuple[dict[str, Any], str]:
     elif step_type == "math":
         source = {"answer": data.get("answer", ""), "numerical_test": data.get("numerical_test", {})}
     elif step_type == "table":
-        source = {
-            "columns": data.get("columns", []),
-            "rows": data.get("rows", []),
-            "options": data.get("options", {}),
-            "description": data.get("description", ""),
-            "is_always_correct": data.get("is_always_correct", False),
-        }
+        source = _table_source_to_stepik(data)
 
     block: dict[str, Any] = {
         "name": step_type,
@@ -563,6 +551,95 @@ def _load_question(folder: Path, step_type: str) -> tuple[dict[str, Any], str]:
         "feedback_wrong": data.get("feedback_wrong", ""),
     }
     return block, f"{step_type}: {_title(html)}"
+
+
+# ---------------------------------------------------------------------------
+# Table quiz: дружелюбный локальный формат ↔ схема Stepik
+# ---------------------------------------------------------------------------
+#
+# Локальный step.json хранит таблицу в читаемом виде:
+#   columns: [{"name": str, "choice_type": "radio"|"checkbox"}]
+#   rows:    [{"name": str, "columns": [true, false]}]
+#   options: {"shuffle_rows": bool, "shuffle_columns": bool}
+#
+# Stepik же ожидает иную схему (stepik-plugins/quizzes/table):
+#   columns: [{"name": str}]                         — без choice_type
+#   rows:    [{"name": str, "columns": [{"choice": bool}]}]
+#   options: {"is_checkbox": bool, "is_randomize_rows": bool,
+#             "is_randomize_columns": bool, "sample_size": int}
+# Radio/checkbox в Stepik задаётся одним флагом на всю таблицу (is_checkbox),
+# поэтому choice_type считаем общим: checkbox, если хотя бы одна колонка checkbox.
+
+
+def _table_source_to_stepik(data: dict[str, Any]) -> dict[str, Any]:
+    """Локальный формат таблицы → block.source для Stepik."""
+    local_cols = data.get("columns", [])
+    is_checkbox = any(
+        isinstance(c, dict) and c.get("choice_type") == "checkbox" for c in local_cols
+    )
+    columns = [
+        {"name": c.get("name", "") if isinstance(c, dict) else str(c)}
+        for c in local_cols
+    ]
+    rows: list[dict[str, Any]] = []
+    for row in data.get("rows", []):
+        cells = row.get("columns", []) if isinstance(row, dict) else []
+        rows.append({
+            "name": row.get("name", "") if isinstance(row, dict) else "",
+            "columns": [
+                cell if isinstance(cell, dict) else {"choice": bool(cell)}
+                for cell in cells
+            ],
+        })
+    opts = data.get("options", {}) or {}
+    options = {
+        "is_checkbox": is_checkbox,
+        "is_randomize_rows": bool(opts.get("shuffle_rows", opts.get("is_randomize_rows", False))),
+        "is_randomize_columns": bool(opts.get("shuffle_columns", opts.get("is_randomize_columns", False))),
+        "sample_size": opts.get("sample_size", len(rows)),
+    }
+    return {
+        "columns": columns,
+        "rows": rows,
+        "options": options,
+        "description": data.get("description", ""),
+        "is_always_correct": data.get("is_always_correct", False),
+    }
+
+
+def _table_source_from_stepik(source: dict[str, Any]) -> dict[str, Any]:
+    """block.source из Stepik → дружелюбный локальный формат таблицы."""
+    options = source.get("options", {}) or {}
+    choice_type = "checkbox" if options.get("is_checkbox") else "radio"
+    columns = [
+        {
+            "name": c.get("name", "") if isinstance(c, dict) else str(c),
+            "choice_type": choice_type,
+        }
+        for c in source.get("columns", [])
+    ]
+    rows: list[dict[str, Any]] = []
+    for row in source.get("rows", []):
+        cells = row.get("columns", []) if isinstance(row, dict) else []
+        rows.append({
+            "name": row.get("name", "") if isinstance(row, dict) else "",
+            "columns": [
+                bool(cell.get("choice")) if isinstance(cell, dict) else bool(cell)
+                for cell in cells
+            ],
+        })
+    local_opts: dict[str, Any] = {}
+    if options.get("is_randomize_rows"):
+        local_opts["shuffle_rows"] = True
+    if options.get("is_randomize_columns"):
+        local_opts["shuffle_columns"] = True
+    return {
+        "columns": columns,
+        "rows": rows,
+        "options": local_opts,
+        "description": source.get("description", ""),
+        "is_always_correct": source.get("is_always_correct", False),
+    }
 
 
 # ---------------------------------------------------------------------------
