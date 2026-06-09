@@ -275,6 +275,37 @@ Each test task is stored as `step.json` in its subfolder. The `"text"` key alway
 - **Do not use practice steps as task material.** Steps with a «Практика:» heading, project-specific examples from those steps, and expected task outcomes are off-limits for test tasks.
 - **Do not test lesson-specific task outcomes.** Tasks must check understanding of general principles and theory, not actions or deliverables defined in any specific practice step of this lesson.
 
+## Obviousness Rules — Non-Negotiable
+
+A question is **banned** if any of the following are true. These rules override all other considerations.
+
+### Red flags — each is grounds for rejection
+
+1. **"Professional tone" leak.** The correct answer sounds measured and professional ("only the relevant context", "the most appropriate approach") while wrong answers sound extreme or careless ("as much data as possible", "never check"). A person with no domain knowledge can identify the correct answer purely by its wording.
+
+2. **Absurd distractors.** One or more wrong options are obviously unrelated to the topic, technically nonsensical, or violate basic common sense. If a learner can eliminate a distractor without any knowledge of the subject, that distractor is banned.
+
+3. **Antonym distractors.** Wrong options are simply logical opposites of the correct answer ("always do X" vs. "never do X"). The learner does not need to know the topic — they just pick the moderate option.
+
+4. **Direct quote from theory.** The correct answer is a near-verbatim copy of a sentence from the theory step. The learner can match text patterns, not test understanding.
+
+5. **Gut-feeling answer.** The correct answer is what any reasonable, thoughtful person would choose based on general life experience, regardless of the course content. Domain knowledge provides zero additional signal.
+
+6. **No plausible distractors.** Fewer than 3 wrong options sound like something a knowledgeable person could seriously consider, even if ultimately wrong. Every distractor must be a genuine misconception, not a straw man.
+
+### What a good distractor looks like
+
+- It describes a **real technique or concept** from the lesson domain — just applied incorrectly or to the wrong context.
+- It represents a **common misconception** that a learner at this stage might actually hold.
+- It requires **actual knowledge of the topic** to rule out — not just common sense or reading the option aloud.
+- Example: for a question about Pipecat transport, a bad distractor is "WebRTC does not exist in Pipecat"; a good distractor is "Pipecat embeds the WebRTC media server into its core, like LiveKit does" — that requires knowing the LiveKit/Pipecat architectural difference.
+
+### What a good question looks like
+
+- All 4 options sound **technically plausible** to someone who has partially studied the topic.
+- The correct answer tests a **specific fact**: a number, an API name, a threshold, a behavioral difference between two named tools.
+- A person who has not studied the lesson cannot guess the correct answer at a rate above **chance** (25% for 4-option single-select).
+
 ## Task Type Rules
 
 ### Tasks With One Correct Answer
@@ -314,10 +345,29 @@ Each test task is stored as `step.json` in its subfolder. The `"text"` key alway
 
 ## Final Check
 
-- Always perform a separate review step after generation.
+Always perform a separate review step after generation. Do not skip it.
+
+### Step 1 — Obviousness audit (mandatory for every question)
+
+For **each** generated question, explicitly answer all four questions below before declaring it complete. If the answer to any question is "yes", rewrite the question — do not keep it.
+
+| # | Question | If yes → action |
+|---|---|---|
+| 1 | Can a person with zero knowledge of this topic identify the correct answer just by reading the options? | Rewrite distractors so all options require domain knowledge to evaluate. |
+| 2 | Is any wrong option obviously absurd, off-topic, or eliminable by common sense alone? | Replace that distractor with a real misconception a learner at this level might hold. |
+| 3 | Does the correct answer quote or closely paraphrase a sentence from the theory step? | Rewrite as a scenario, application, or consequence question — not a recall question. |
+| 4 | Are all wrong options simply "extreme" versions of the correct answer (always/never, too much/too little)? | Replace with distractors that describe real but wrong techniques or configurations. |
+
+Apply this audit to matching pairs and sorting items as well: each pair must require domain knowledge to connect correctly, not just logic or language patterns.
+
+### Step 2 — Format checks
+
+- For single-answer tasks: exactly 4 options; correct answer at index 1; each option within 60 characters; correct answer not longer than all incorrect options; at least one incorrect option strictly longer.
+- For multiple-answer tasks: `sample_size` equals the total number of options (no truncation).
+
+### Step 3 — Coverage and structure
+
 - Make sure the tasks are based on the final lesson theory.
-- For single-answer tasks, check: exactly 4 options; correct answer at index 1; each option within 60 characters; correct answer not longer than all incorrect options; at least one incorrect option strictly longer.
-- For multiple-answer tasks, check that `sample_size` equals the total number of options (no truncation).
 - Make sure `lesson.json` is updated with all new test task step entries.
 - Make sure subfolder names match the step type: `{pos:02d}_choice`, `{pos:02d}_matching`, etc.
 - Make sure test task steps continue the lesson step numbering after theory steps.
