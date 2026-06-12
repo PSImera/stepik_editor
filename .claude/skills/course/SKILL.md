@@ -55,6 +55,17 @@ structure[]          ← array of modules (sections), sorted by section_position
 
 > The uploader uses `lesson_info.title` and `section_info.title` as "last known remote state" to decide whether to send a rename request. Editing these cache fields breaks change detection and causes the uploader to silently skip the API call.
 
+### refresh_structure() — pull semantics (remote wins)
+
+`refresh_structure()` (also triggered by `download_course(refresh_structure=True)`) pulls the current state from Stepik:
+
+- Module/lesson **titles and positions are overwritten from Stepik** (with a console notice for every overwritten value). Manual edits made on the Stepik website are picked up automatically.
+- **Local lesson folders are renamed automatically** when positions change (two-phase rename, so swaps are safe). `MM-LL_summary.md` files inside moved lesson folders are renamed to match the new position.
+- Drafts (`lesson_id: 0`, modules without `section_id`) and `course_info` description fields stay local. If local description fields differ from Stepik, a warning is printed but nothing is overwritten.
+- Nothing is deleted: local entries whose id no longer exists on Stepik are kept with a warning.
+
+**Consequence:** push pending local renames/reorders with `upload_structure()` *before* running a refresh, otherwise the refresh will revert them to the server state.
+
 ---
 
 ## Editing Rules

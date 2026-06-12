@@ -71,9 +71,18 @@ class CourseStructureMixin:
         return sanitize_filename(name)
 
     def get_course_structure(self) -> list[dict[str, Any]]:
-        """Строит локальное представление структуры курса из sections/units/lessons."""
+        """Строит локальное представление структуры курса из sections/units/lessons.
+
+        Список секций всегда берётся свежим запросом к API: кэшированный
+        course_info из structure.json может содержать устаревший список
+        sections и тогда refresh молча пропустит новые/изменённые модули.
+        """
         structure: list[dict[str, Any]] = []
-        section_ids = self.get_sections_from_course()
+        section_ids: list[int] = self.client.get_course(self.course_id).get(
+            "sections", []
+        )
+        if not section_ids:
+            section_ids = self.get_sections_from_course()
 
         if not section_ids:
             print("⚠️ Пробуем альтернативный способ получения секций...")

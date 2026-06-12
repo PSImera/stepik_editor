@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from .lesson_manifest import load_manifest, save_manifest, upsert_step
-from .step_storage import save_step
+from .step_storage import delete_step_folder, save_step
 from .step_types import SUPPORTED_STEP_TYPES
 
 if TYPE_CHECKING:
@@ -141,11 +141,28 @@ class DownloadWorkflowMixin:
     ) -> None:
         """Сохраняет шаги урока, обновляет lesson.json."""
         manifest = load_manifest(lesson_folder)
+        stored_lesson_id = manifest.get("lesson_id")
+        if stored_lesson_id and stored_lesson_id != lesson_id:
+            # в папке лежит другой урок (например, после перестановки уроков) —
+            # вычищаем его шаги, иначе содержимое двух уроков перемешается
+            print(
+                f"    WARNING: folder contains lesson {stored_lesson_id}, "
+                f"expected {lesson_id} — clearing its steps"
+            )
+            for old_step in manifest.get("steps", []):
+                delete_step_folder(
+                    lesson_folder, old_step["position"], old_step.get("type", "")
+                )
+            manifest = {"lesson_id": lesson_id, "steps": []}
         manifest["lesson_id"] = lesson_id
 
         if full_sync:
-            existing_positions = {s["position"] for s in lesson_steps if s.get("position") is not None}
-            self._cleanup_stale_steps(lesson_folder, manifest, existing_positions)
+            remote_steps = {
+                s["position"]: s.get("block", {}).get("name", "")
+                for s in lesson_steps
+                if s.get("position") is not None
+            }
+            self._cleanup_stale_steps(lesson_folder, manifest, remote_steps)
             manifest["steps"] = []
 
         for step in sorted(lesson_steps, key=lambda s: s.get("position", 0)):
@@ -175,16 +192,19 @@ class DownloadWorkflowMixin:
         self,
         lesson_folder: Path,
         manifest: dict[str, Any],
-        current_positions: set[int],
+        remote_steps: dict[int, str],
     ) -> None:
-        """Удаляет подпапки шагов, которых больше нет на Stepik."""
-        from .step_storage import delete_step_folder
+        """Удаляет подпапки шагов, которых больше нет на Stepik.
 
+        remote_steps — {position: type} актуальных шагов урока. Подпапка удаляется,
+        если позиции больше нет на Stepik или у шага сменился тип (иначе старая
+        папка `05_text/` останется рядом с новой `05_choice/`).
+        """
         for step in manifest.get("steps", []):
             pos = step["position"]
-            if pos in current_positions:
-                continue
             step_type = step.get("type", "")
+            if remote_steps.get(pos) == step_type:
+                continue
             delete_step_folder(lesson_folder, pos, step_type)
             print(f"    REMOVED stale step {pos} [{step_type}]")
 
