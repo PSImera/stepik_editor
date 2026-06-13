@@ -132,6 +132,19 @@ Store the following files inside `{pos:02d}_code/`. The names are fixed — the 
 - Use only standard library Python `3.12` plus explicitly allowed external libraries.
 - If a needed library is not available but the task still requires its interface, imitate it with mock functions, variables, or classes.
 
+### What The Task Must Actually Test
+
+- **Test the student's skill, not an authoring rule.** The checked concept must be something the learner is meant to *do* — write the framework assembly, implement the algorithm, transform the data. Do **not** turn author-side or course-internal constraints into the pass/fail condition. Example of the wrong move: a checker that fails the student for choosing a "forbidden" model when the forbidden-model list is an author recommendation rule, not part of the student's coding task. Those constraints belong in the condition text or in human-reviewed tasks, never as an automatic verdict.
+- **Make wrong code fail through real behavior, not through a hardcoded gate.** Prefer a task where the mock reproduces the framework's actual behavior and *exercises the student's code*: run a turn through the assembled agent, push a frame through the pipeline, feed a stream through the wrapper. Correct code then produces the correct observable result; incorrect wiring breaks naturally (the mock raises or returns the wrong value) without the student having to write defensive checks. This tests understanding instead of recall of a rule.
+- **Put the orchestration in the mock (`::header`), leave only the skill in `::code`.** The framework's internals — the event loop, the frame transitions, the stream parsing that *reacts* to the student's assembly — live in the header and are not written by the student. The student writes only the part the lesson teaches. If a mismatch should "break the framework," raise that error inside the header mock, not in the template the student fills.
+
+### Error Handling And `raise` In Student Code
+
+- **Do not require `raise`/validation in the student's function by default.** Adding `ValueError` for bad input, empty arguments, or out-of-range values is only justified when error handling is *itself* the concept being taught.
+- A student-written `raise` is acceptable **only when both hold**: (a) the condition text explicitly states the error case and the expected behavior, and (b) the checker has test cases that verify it. If you cannot point to both, remove the validation and the corresponding "error" tests.
+- Edge-case handling (empty list, single element, boundary value) is allowed when natural to the task, but keep it minimal and do not invent failure modes the lesson never raised.
+- When wrong assembly *should* fail, prefer letting the header mock surface it (a missing component makes `run_turn` break on its own) over instructing the student to validate inputs.
+
 ## Allowed Libraries
 
 - Allowed external libraries are:
@@ -208,3 +221,5 @@ Store the following files inside `{pos:02d}_code/`. The names are fixed — the 
 10. Ensure only allowed libraries are used, or absent ones are explicitly mocked.
 11. Ensure the statement, template, checker, and solution are consistent with one another.
 12. Ensure `lesson.json` has been updated with the new step entry (position, type `code`, step_source_id `null`).
+13. Ensure the pass/fail condition tests the student's skill, not an author/course rule (e.g. a recommended-model list) — and that wrong code fails through the mock's real behavior, not a hardcoded gate.
+14. Ensure the student's `::code` contains no `raise`/validation unless the condition text describes that error case and the checker tests it; otherwise the orchestration and any failure live in the `::header` mock.

@@ -32,12 +32,14 @@ description: Rules for creating practical assignments that are reviewed by peopl
 
 ## Allowed Submission Formats
 
-- The result of the assignment may be:
+- **The platform answer field does NOT support attaching arbitrary files.** The only submission content it supports is: text, links (URLs), and images (screenshots pasted or uploaded into the answer). Never ask the student to "attach"/"прикрепить"/"приложить файл" an audio file, a video, an archive, a source file, or a log file.
+- Therefore the result of the assignment may be:
   - plain text;
-  - a link, for example to a GitHub repository;
-  - an attached image or screenshot;
+  - a link (to a GitHub repository, cloud storage, a video/audio host, a gist, etc.);
+  - an image or screenshot placed in the answer;
   - a combination of the above.
-- Therefore, the assignment must ask the student to submit one of these options.
+- For any non-image artifact — an audio recording, a screen recording, an archive, a code or log file — ask for a **link** (cloud storage, file/video host, gist, repository), not a file attachment. A log or other short textual output may also be pasted as text or shown as a screenshot.
+- Therefore, the assignment must ask the student to submit one of these supported options.
 - Prefer asking for a concrete artifact with visible structure rather than a vague "try it" or "think about the method."
 - In the submission section, list the required elements of the answer directly and unambiguously. Do not use wording like `if available` for something that is actually required.
 - If the result must be in a repository, do not ask the student to duplicate the same result in the answer field; a link to the repository is enough, and it does not need to be duplicated in the answer field.
@@ -50,6 +52,8 @@ description: Rules for creating practical assignments that are reviewed by peopl
 - Keep terminology consistent with the lesson.
 - Do not require knowledge that was not taught in this lesson or in previous lessons of the course unless the user explicitly asks to add it.
 - If the assignment may have several correct outcomes, describe the valid result options in advance instead of building only one scenario into the task statement.
+- **Do not impose author-side or course-internal authoring rules as constraints on the student.** Rules that govern how *you* write course materials — for example a "use only current models / forbidden-models" recency rule, or a preferred-library convention — exist for examples and recommendations the author writes, not for the learner's own work. Do not tell the student "use only model X" or "don't use Y" and do not penalize such choices in rubrics, unless that constraint is a genuine learning objective of the lesson. Let the student choose tools and models freely; at most, point to what the module's examples use as a starting suggestion.
+- The same applies to rubric `text` and the review `text` field: a reviewer must not mark a submission down for a tool/model choice that the assignment never required. Grade the demonstrated skill, not conformance to an authoring convention.
 
 ## instruction.json Defaults
 
