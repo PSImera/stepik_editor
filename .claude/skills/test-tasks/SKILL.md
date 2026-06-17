@@ -36,10 +36,12 @@ If no arguments are given, ask the user for module and lesson indices.
 ### lesson.json entry for a new test task step
 
 ```json
-{"position": 5, "step_source_id": null, "type": "choice", "cost": 0}
+{"position": 5, "step_source_id": null, "type": "choice", "cost": 1}
 ```
 
 `step_source_id` is `null` for steps not yet uploaded to Stepik.
+
+**`cost` MUST be `1` for every test task step (`choice`, `sorting`, `matching`, `fill-blanks`, `number`, `string`, `random-tasks`, `math`, `table`).** This is the score Stepik awards for a correct answer. `cost` is read from `lesson.json` by the uploader (`load_step` → `manifest_entry.get("cost", 0)`); if it is left at `0`, Stepik shows the task as worth **0 points** and the learner gets nothing for solving it. Only theory `text` steps keep `cost: 0`. Never create or leave a test task with `cost: 0`. When editing an existing lesson, verify all test task entries in `lesson.json` have `cost: 1`.
 
 ## Test Task File Format
 
@@ -369,5 +371,6 @@ Apply this audit to matching pairs and sorting items as well: each pair must req
 
 - Make sure the tasks are based on the final lesson theory.
 - Make sure `lesson.json` is updated with all new test task step entries.
+- Make sure every test task entry in `lesson.json` has `"cost": 1` (never `0`) — otherwise Stepik awards 0 points for the task.
 - Make sure subfolder names match the step type: `{pos:02d}_choice`, `{pos:02d}_matching`, etc.
 - Make sure test task steps continue the lesson step numbering after theory steps.
