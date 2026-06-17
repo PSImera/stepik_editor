@@ -18,7 +18,7 @@ if __name__ == "__main__":
         # uploader.upload_structure(sync_deletions=True)
 
         uploader.upload_course(
-            # module_num=5, 
-            # lesson_num=4,
+            module_num=5, 
+            lesson_num=4,
             # step_num=4
         )

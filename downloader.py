@@ -16,8 +16,8 @@ if __name__ == "__main__":
         downloader = CourseDownloader(config)
 
         downloader.download_course(
-            # module_num=5,
-            # lesson_num=3,
+            module_num=5,
+            lesson_num=4,
             # step_num=1,
-            refresh_structure=True,
+            # refresh_structure=True,
         )

@@ -8,11 +8,21 @@ Short routing rules for working with learning materials in the `stepik_editor` p
 - Always read and write HTML files in `UTF-8`.
 - Do not blindly agree with the user. If a suggestion is factually wrong, duplicates existing content, or would make the material worse — say so directly and explain why.
 
-## structure.json — Форматирование
+## Формат файлов — канон Stepik (round-trip без диффа)
+
+Локальные файлы должны храниться **ровно в том виде, в каком их отдаёт даунлодер при скачивании со Stepik**, чтобы цикл «выгрузил → скачал» не порождал шумных диффов. Канон:
+
+- **Без финального перевода строки** в конце файла (`task.html`, `step.json`, `lesson.json`, `structure.json`). Даунлодер пишет контент через `content.strip()` / `json.dumps(...)` без хвостового `\n`. Не добавляй пустую строку в конце — ни вручную, ни в Python-скриптах (`out.write("\n")` запрещён для этих файлов).
+- **JSON — `indent=4`, объекты развёрнуты** (каждое поле на своей строке), `ensure_ascii=False`, без BOM. Компактная запись опций в одну строку (`{"is_correct": false, ...}`) недопустима как конечный вид — она будет развёрнута. `structure.json` — `indent=2`.
+- **`task.html` — `.strip()`** (без обрамляющих пробелов и пустых строк).
 
 **Никогда не сохраняй `structure.json` через PowerShell `ConvertTo-Json`** — он ломает отступы (дублирует их для вложенных объектов) и экранирует `<>` как `<>`.
 
-Форматирование выполняется автоматически хуком `PostToolUse` после каждого `Write`/`Edit` любого `.json`-файла: `.claude/hooks/format_json.ps1` запускает Python с `ensure_ascii=False`, `indent=4`, запись без BOM. Ручной запуск не нужен.
+Форматирование выполняется автоматически хуками `PostToolUse` после каждого `Write`/`Edit`. Ручной запуск не нужен:
+- `.claude/hooks/format_json.ps1` → `format_json.py` для любого `.json`: `ensure_ascii=False`, `indent=4`, без BOM, без хвостового `\n`.
+- `.claude/hooks/format_html.ps1` → `format_html.py` для `task.html`: `content.strip()`, без хвостового `\n`.
+
+Эти хуки зеркалят `_write_json` / `_write_html` в `src/stepik_downloader/step_storage.py`. При правке любой из сторон (хук или даунлодер) меняй обе синхронно, иначе round-trip снова начнёт давать дифф.
 
 ## Public Materials — Обязательное правило
 
