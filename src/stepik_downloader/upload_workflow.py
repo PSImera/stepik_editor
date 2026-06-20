@@ -180,10 +180,13 @@ class UploadWorkflowMixin:
         remote_by_position: dict[int, dict[str, Any]] = {
             s["position"]: s for s in all_lesson_steps
         }
-        # ID шагов, уже привязанных к конкретным записям манифеста — не отдавать при поиске по позиции
+        # ID шагов, уже привязанных к конкретным записям манифеста — не отдавать при поиске
+        # по позиции. Берём из ПОЛНОГО манифеста, а не из manifest_steps: при загрузке одного
+        # шага (step_num) фильтр оставил бы один элемент, и чужой ssid не был бы защищён —
+        # шаг с пустым ssid подобрался бы по позиции к чужому удалённому шагу и затёр его.
         claimed_ids: set[int] = {
             e["step_source_id"]
-            for e in manifest_steps
+            for e in manifest.get("steps", manifest_steps)
             if e.get("step_source_id")
         }
 
@@ -283,11 +286,13 @@ class UploadWorkflowMixin:
                             step_is_new=True,
                         )
                     else:
-                        # Без инструкции позиция могла не выставиться при create_step_source
+                        # Без инструкции позиция могла не выставиться при create_step_source.
+                        # cost передаём явно: при PUT-fallback (WAF) Stepik иначе сбросит его в 0.
                         self._ensure_step_source_position(
                             step_source_id=step_source_id,
                             target_position=position,
                             block=block,
+                            cost=cost,
                         )
                     upsert_step(manifest, {**manifest_entry, "step_source_id": step_source_id})
                     save_manifest(lesson_folder, manifest)
@@ -382,11 +387,13 @@ class UploadWorkflowMixin:
         step_source_id: int,
         target_position: int,
         block: dict[str, Any],
+        cost: int | None = None,
     ) -> None:
         self.client.update_step_source_position(
             step_source_id=step_source_id,
             position=target_position,
             block=block,
+            cost=cost,
         )
 
     def _ensure_step_positions(
@@ -409,6 +416,12 @@ class UploadWorkflowMixin:
             entry["step_source_id"]: entry["position"]
             for entry in manifest_steps
             if entry.get("step_source_id") and entry["step_source_id"] in by_id
+        }
+        # cost из манифеста (источник истины): при PUT-fallback позиции иначе сбрасывается в 0
+        cost_by_id: dict[int, int | None] = {
+            entry["step_source_id"]: entry.get("cost")
+            for entry in manifest_steps
+            if entry.get("step_source_id")
         }
 
         misplaced: dict[int, tuple[int, int]] = {
@@ -437,7 +450,9 @@ class UploadWorkflowMixin:
             temp_pos = max_pos + 100 + i
             block = by_id[ssid].get("block")
             try:
-                self.client.update_step_source_position(ssid, temp_pos, block)
+                self.client.update_step_source_position(
+                    ssid, temp_pos, block, cost=cost_by_id.get(ssid)
+                )
                 temp_positions[ssid] = temp_pos
                 print(f"      step {ssid}: parked at {temp_pos}")
             except Exception as exc:
@@ -449,7 +464,9 @@ class UploadWorkflowMixin:
                 continue
             block = by_id[ssid].get("block")
             try:
-                self.client.update_step_source_position(ssid, target_pos, block)
+                self.client.update_step_source_position(
+                    ssid, target_pos, block, cost=cost_by_id.get(ssid)
+                )
                 print(f"      step {ssid}: moved → {target_pos}")
             except Exception as exc:
                 print(f"      step {ssid}: failed to move to {target_pos}: {exc}")
