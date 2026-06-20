@@ -83,6 +83,13 @@ when_to_use: "Trigger: 'добавь схему', 'нужен визуал', 'с
 - Prefer a clean flat style that stays readable inside lesson pages.
 - Keep the diagram compact and instructional rather than ornamental.
 
+## Text Minimalism
+
+- Put the **necessary minimum** of text on a scheme: block labels, short captions, arrow labels, and nothing more.
+- A scheme is not a place to repeat the lesson. Do **not** copy paragraphs, explanations, definitions, or sentences from the lesson text into the diagram — the surrounding HTML already carries that context.
+- Labels should be short noun phrases or single keywords, not full sentences. If a block needs a sentence to be understood, the wording is too long — shorten it or move the explanation back into the lesson text.
+- The reader should grasp the structure from the visual layout (blocks, arrows, grouping); the words only name the parts. When in doubt, cut text rather than add it.
+
 ## Course-Observed Style Baseline
 
 - Before drawing a new scheme, inspect `2-4` existing SVG files from the current course and inherit their dominant palette, density, and text rhythm instead of inventing a new visual language.

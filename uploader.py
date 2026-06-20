@@ -19,6 +19,6 @@ if __name__ == "__main__":
 
         uploader.upload_course(
             module_num=5, 
-            lesson_num=4,
+            lesson_num=5,
             # step_num=4
         )
