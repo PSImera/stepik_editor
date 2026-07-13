@@ -1,3 +1,6 @@
 [submodule ".claude/skills/humanizer-ru"]
 	path = .claude/skills/humanizer-ru
 	url = https://github.com/Vladimir-Human/humanizer-ru
+[submodule ".claude/skills/llm-council"]
+	path = .claude/skills/llm-council
+	url = https://github.com/aiwithremy/claude-skills-llm-council.git
